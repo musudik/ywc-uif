@@ -1,59 +1,151 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { useNotification } from '../../context/NotificationContext';
+import { authService } from '../../services/authService';
+import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 interface DashboardStats {
-  totalUsers: number;
   totalCoaches: number;
   totalClients: number;
   totalForms: number;
 }
 
+interface RecentActivity {
+  user: string;
+  action: string;
+  time: string;
+  type: 'client' | 'coach' | 'form' | 'system';
+}
+
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { colors } = useTheme();
-  const { showInfo } = useNotification();
+  const { showInfo, showError } = useNotification();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading stats
-    const loadStats = async () => {
-      try {
-        // In real app, this would be an API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setStats({
-          totalUsers: 156,
-          totalCoaches: 12,
-          totalClients: 89,
-          totalForms: 342,
-        });
-      } catch (error) {
-        console.error('Failed to load stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStats();
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load all users, coaches, and clients
+      const [allCoaches, allClients] = await Promise.all([
+        authService.getAllCoaches(), 
+        authService.getAllClients()
+      ]);
+
+      // Calculate total completed forms across all clients
+      let totalCompletedForms = 0;
+      const activities: RecentActivity[] = [];
+
+      // Process each client to count forms and create activity entries
+      for (const client of allClients) {
+        try {
+          const userId = client.id; // Use client.id directly
+          let clientCompletedForms = 0;
+          
+          // Check each form section
+          const formChecks = [
+            { service: () => formService.getPersonalDetailsById(userId), name: 'Personal Details' },
+            { service: () => formService.getEmploymentById(userId), name: 'Employment' },
+            { service: () => formService.getIncomeById(userId), name: 'Income' },
+            { service: () => formService.getExpensesById(userId), name: 'Expenses' },
+            { service: () => formService.getAssetById(userId), name: 'Assets' },
+            { service: () => formService.getLiabilityById(userId), name: 'Liabilities' }
+          ];
+
+          for (const formCheck of formChecks) {
+            try {
+              await formCheck.service();
+              clientCompletedForms++;
+              
+              // Add to recent activities (only for recently created clients)
+              // Since we don't have created_at in the client object, we'll skip time-based filtering for now
+              activities.push({
+                user: `${client.first_name} ${client.last_name}`,
+                action: `completed ${formCheck.name} form`,
+                time: 'Recently',
+                type: 'form'
+              });
+            } catch (error) {
+              // Form not completed, continue
+            }
+          }
+          
+          totalCompletedForms += clientCompletedForms;
+        } catch (error) {
+          console.error('Error processing client:', client.id, error);
+        }
+      }
+
+      // Add coach creation activities (with safety check)
+      allCoaches.forEach(coach => {
+        if ('created_at' in coach && coach.created_at && typeof coach.created_at === 'string') {
+          const coachCreatedDate = new Date(coach.created_at);
+          const daysSinceCreated = Math.floor((Date.now() - coachCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceCreated <= 7) {
+            activities.push({
+              user: 'Admin',
+              action: `created coach account for ${coach.first_name} ${coach.last_name}`,
+              time: daysSinceCreated === 0 ? 'Today' : 
+                    daysSinceCreated === 1 ? '1 day ago' : 
+                    `${daysSinceCreated} days ago`,
+              type: 'coach'
+            });
+          }
+        }
+      });
+
+      // Add client creation activities (with safety check)
+      allClients.forEach(client => {
+        // Since clients from getAllClients might not have created_at, we'll add a generic activity
+        activities.push({
+          user: 'System',
+          action: `client ${client.first_name} ${client.last_name} is registered`,
+          time: 'Recently',
+          type: 'client'
+        });
+      });
+
+      // Limit activities to avoid too many entries
+      const limitedActivities = activities.slice(0, 6);
+
+      setStats({
+        totalCoaches: allCoaches.length,
+        totalClients: allClients.length,
+        totalForms: totalCompletedForms,
+      });
+
+      setRecentActivities(limitedActivities);
+
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+      showError('Load Failed', 'Failed to load dashboard data');
+      // Set empty data on error
+      setStats({
+        totalCoaches: 0,
+        totalClients: 0,
+        totalForms: 0,
+      });
+      setRecentActivities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return <LoadingSpinner fullScreen text="Loading dashboard..." />;
   }
 
   const statCards = [
-    {
-      title: 'Total Users',
-      value: stats?.totalUsers || 0,
-      icon: '👥',
-      color: colors.primary,
-      link: '/dashboard/users',
-    },
     {
       title: 'Coaches',
       value: stats?.totalCoaches || 0,
@@ -78,18 +170,6 @@ export default function AdminDashboard() {
   ];
 
   const quickActions = [
-    {
-      title: 'Create New User',
-      description: 'Add a new admin, coach, or client to the system',
-      link: '/dashboard/users/create',
-      icon: '➕',
-    },
-    {
-      title: 'Manage Users',
-      description: 'View and manage all system users',
-      link: '/dashboard/users',
-      icon: '⚙️',
-    },
     {
       title: 'Manage Coaches',
       description: 'View and manage all coaches in the system',
@@ -117,7 +197,10 @@ export default function AdminDashboard() {
           </p>
         </div>
         <Button
-          onClick={() => showInfo('Dashboard Updated', 'Data refreshed successfully')}
+          onClick={() => {
+            loadDashboardData();
+            showInfo('Dashboard Updated', 'Data refreshed successfully');
+          }}
           variant="outline"
         >
           Refresh Data
@@ -195,25 +278,32 @@ export default function AdminDashboard() {
           </h2>
         </div>
         <div className="p-6">
-          <div className="space-y-4">
-            {[
-              { user: 'John Doe', action: 'completed Personal Details form', time: '2 hours ago' },
-              { user: 'Jane Smith', action: 'was assigned to Coach Mike', time: '4 hours ago' },
-              { user: 'Coach Sarah', action: 'created new client profile', time: '6 hours ago' },
-              { user: 'Admin', action: 'updated system settings', time: '1 day ago' },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center space-x-3 py-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {activity.user}
-                  </span>{' '}
-                  {activity.action}
-                  <span className="text-gray-500 ml-2">{activity.time}</span>
-                </p>
-              </div>
-            ))}
-          </div>
+          {recentActivities.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">📊</div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No Recent Activity
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                No recent system activities to display.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentActivities.map((activity, index) => (
+                <div key={index} className="flex items-center space-x-3 py-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {activity.user}
+                    </span>{' '}
+                    {activity.action}
+                    <span className="text-gray-500 ml-2">{activity.time}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
