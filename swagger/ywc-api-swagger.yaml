@@ -1,0 +1,2300 @@
+openapi: 3.0.3
+info:
+  title: YWC Financial Forms API
+  description: |
+    Comprehensive API for managing financial forms and client data for Your Wealth Coach (YWC).
+    
+    ## Authentication
+    This API uses JWT Bearer token authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## User Roles
+    - **ADMIN**: Full system access, can manage all users and data
+    - **COACH**: Can manage assigned clients and their financial data
+    - **CLIENT**: Can view and update their own financial information
+    - **GUEST**: Limited read-only access to public endpoints
+    
+    ## User-Centric Architecture
+    All financial data is now linked directly to users via `personal_id`. When a client is created:
+    1. A user account is created with role 'CLIENT'
+    2. The client is assigned to a coach via `coach_id`
+    3. All financial data (personal details, income, expenses, etc.) references the `personal_id`
+    
+    ## Test Accounts
+    - Admin: admin@ywc.com / admin123
+    - Coach: coach@ywc.com / coach123  
+    - Client: client@ywc.com / client123
+    
+  version: 2.0.0
+  contact:
+    name: YWC Development Team
+    email: dev@yourwealthcoach.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.yourwealthcoach.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login endpoint
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the request was successful
+        message:
+          type: string
+          description: Human-readable message about the operation
+        data:
+          type: object
+          description: Response data (varies by endpoint)
+        error:
+          type: string
+          description: Error message if success is false
+      required:
+        - success
+        - message
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User's email address
+        first_name:
+          type: string
+          maxLength: 100
+          description: User's first name
+        last_name:
+          type: string
+          maxLength: 100
+          description: User's last name
+        role:
+          type: string
+          enum: [ADMIN, COACH, CLIENT, GUEST]
+          description: User's role in the system
+        coach_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of assigned coach (for clients)
+        is_active:
+          type: boolean
+          description: Whether the user account is active
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+      required:
+        - id
+        - email
+        - first_name
+        - last_name
+        - role
+        - is_active
+
+    PersonalDetails:
+      type: object
+      properties:
+        personal_id:
+          type: string
+          format: uuid
+          description: Unique personal details identifier
+        personal_id:
+          type: string
+          format: uuid
+          description: Associated user ID
+        coach_personal_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Assigned coach's user ID
+        applicant_type:
+          type: string
+          enum: [PrimaryApplicant, SecondaryApplicant]
+          description: Type of applicant
+        salutation:
+          type: string
+          maxLength: 10
+          description: Title (Mr., Mrs., Dr., etc.)
+        first_name:
+          type: string
+          maxLength: 100
+          description: First name
+        last_name:
+          type: string
+          maxLength: 100
+          description: Last name
+        street:
+          type: string
+          maxLength: 255
+          description: Street address
+        house_number:
+          type: string
+          maxLength: 20
+          description: House number
+        postal_code:
+          type: string
+          maxLength: 20
+          description: Postal/ZIP code
+        city:
+          type: string
+          maxLength: 100
+          description: City
+        email:
+          type: string
+          format: email
+          description: Email address
+        phone:
+          type: string
+          maxLength: 20
+          description: Phone number
+        whatsapp:
+          type: string
+          maxLength: 20
+          nullable: true
+          description: WhatsApp number
+        marital_status:
+          type: string
+          maxLength: 50
+          description: Marital status
+        birth_date:
+          type: string
+          format: date
+          description: Date of birth
+        birth_place:
+          type: string
+          maxLength: 100
+          description: Place of birth
+        nationality:
+          type: string
+          maxLength: 100
+          description: Nationality
+        residence_permit:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Residence permit information
+        eu_citizen:
+          type: boolean
+          description: EU citizenship status
+        tax_id:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Tax identification number
+        iban:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: International Bank Account Number
+        housing:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Housing situation
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    EmploymentDetails:
+      type: object
+      properties:
+        employment_id:
+          type: string
+          format: uuid
+        personal_id:
+          type: string
+          format: uuid
+        employment_type:
+          type: string
+          enum: [PrimaryEmployment, SecondaryEmployment]
+        occupation:
+          type: string
+          maxLength: 200
+        contract_type:
+          type: string
+          maxLength: 100
+        contract_duration:
+          type: string
+          maxLength: 100
+          nullable: true
+        employer_name:
+          type: string
+          maxLength: 200
+        employed_since:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    IncomeDetails:
+      type: object
+      properties:
+        income_id:
+          type: string
+          format: uuid
+        personal_id:
+          type: string
+          format: uuid
+        gross_income:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Gross monthly income
+        net_income:
+          type: number
+          format: decimal
+          minimum: 0
+          description: Net monthly income
+        tax_class:
+          type: string
+          maxLength: 10
+          description: German tax class (1-6)
+        tax_id:
+          type: string
+          maxLength: 100
+          nullable: true
+        number_of_salaries:
+          type: integer
+          minimum: 1
+          maximum: 24
+          default: 12
+          description: Number of salary payments per year
+        child_benefit:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        other_income:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        income_trade_business:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        income_self_employed_work:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        income_side_job:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ExpensesDetails:
+      type: object
+      properties:
+        expenses_id:
+          type: string
+          format: uuid
+        personal_id:
+          type: string
+          format: uuid
+        cold_rent:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        electricity:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        living_expenses:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        gas:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        telecommunication:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        account_maintenance_fee:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        alimony:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        subscriptions:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        other_expenses:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Asset:
+      type: object
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+        personal_id:
+          type: string
+          format: uuid
+        real_estate:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        securities:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        bank_deposits:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        building_savings:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        insurance_values:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        other_assets:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Liability:
+      type: object
+      properties:
+        liability_id:
+          type: string
+          format: uuid
+        personal_id:
+          type: string
+          format: uuid
+        loan_type:
+          type: string
+          enum: [PersonalLoan, HomeLoan, CarLoan, BusinessLoan, EducationLoan, OtherLoan]
+        loan_bank:
+          type: string
+          maxLength: 200
+          nullable: true
+        loan_amount:
+          type: number
+          format: decimal
+          minimum: 0
+          nullable: true
+        loan_monthly_rate:
+          type: number
+          format: decimal
+          minimum: 0
+          nullable: true
+        loan_interest:
+          type: number
+          format: decimal
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Interest rate as percentage
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Operation failed"
+        error:
+          type: string
+          example: "Detailed error message"
+
+paths:
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "admin@ywc.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "admin123"
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          token:
+                            type: string
+                            description: JWT token for authentication
+                          expiresIn:
+                            type: string
+                            example: "24h"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: |
+        Create a new user account. Only admins can create other admins or coaches.
+        Clients can be created by coaches or admins and assigned to a coach.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "newclient@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "password123"
+                first_name:
+                  type: string
+                  maxLength: 100
+                  example: "John"
+                last_name:
+                  type: string
+                  maxLength: 100
+                  example: "Doe"
+                role:
+                  type: string
+                  enum: [ADMIN, COACH, CLIENT, GUEST]
+                  default: CLIENT
+                  example: "CLIENT"
+                coach_id:
+                  type: string
+                  format: uuid
+                  description: Required when creating a client
+                  example: "123e4567-e89b-12d3-a456-426614174000"
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          token:
+                            type: string
+                          expiresIn:
+                            type: string
+        '400':
+          description: Validation error or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh JWT token
+      description: Refresh an existing JWT token to extend session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Current JWT token to refresh
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              required:
+                - token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
+                          token:
+                            type: string
+                            description: New JWT token
+                          expiresIn:
+                            type: string
+                            example: "24h"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Logout user (client-side token removal)
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: "Please remove the token from your client storage"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/me/clients:
+    get:
+      tags:
+        - Authentication
+      summary: Get coach's clients
+      description: Retrieve list of clients assigned to the authenticated coach
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Clients retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            personal_id:
+                              type: string
+                              format: uuid
+                            first_name:
+                              type: string
+                            last_name:
+                              type: string
+                            email:
+                              type: string
+                            applicant_type:
+                              type: string
+                            created_at:
+                              type: string
+                              format: date-time
+        '403':
+          description: Access denied - coaches and admins only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Personal Details Endpoints
+  /personal-details:
+    post:
+      tags:
+        - Personal Details
+      summary: Create personal details
+      description: Create personal details for the authenticated user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applicant_type:
+                  type: string
+                  enum: [PrimaryApplicant, SecondaryApplicant]
+                salutation:
+                  type: string
+                  maxLength: 10
+                first_name:
+                  type: string
+                  maxLength: 100
+                last_name:
+                  type: string
+                  maxLength: 100
+                street:
+                  type: string
+                  maxLength: 255
+                house_number:
+                  type: string
+                  maxLength: 20
+                postal_code:
+                  type: string
+                  maxLength: 20
+                city:
+                  type: string
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                  maxLength: 20
+                whatsapp:
+                  type: string
+                  maxLength: 20
+                marital_status:
+                  type: string
+                  maxLength: 50
+                birth_date:
+                  type: string
+                  format: date
+                birth_place:
+                  type: string
+                  maxLength: 100
+                nationality:
+                  type: string
+                  maxLength: 100
+                residence_permit:
+                  type: string
+                  maxLength: 100
+                eu_citizen:
+                  type: boolean
+                tax_id:
+                  type: string
+                  maxLength: 100
+                iban:
+                  type: string
+                  maxLength: 50
+                housing:
+                  type: string
+                  maxLength: 100
+              required:
+                - applicant_type
+                - salutation
+                - first_name
+                - last_name
+                - street
+                - house_number
+                - postal_code
+                - city
+                - email
+                - phone
+                - marital_status
+                - birth_date
+                - birth_place
+                - nationality
+                - eu_citizen
+      responses:
+        '201':
+          description: Personal details created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PersonalDetails'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Personal Details
+      summary: Get all personal details
+      description: Retrieve all personal details with optional filtering
+      parameters:
+        - name: applicant_type
+          in: query
+          schema:
+            type: string
+            enum: [PrimaryApplicant, SecondaryApplicant]
+          description: Filter by applicant type
+        - name: marital_status
+          in: query
+          schema:
+            type: string
+          description: Filter by marital status
+      responses:
+        '200':
+          description: Personal details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PersonalDetails'
+
+  /personal-details/my:
+    get:
+      tags:
+        - Personal Details
+      summary: Get my personal details
+      description: Retrieve personal details for the authenticated user
+      responses:
+        '200':
+          description: Personal details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PersonalDetails'
+        '404':
+          description: Personal details not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /personal-details/coach/{coachId}:
+    get:
+      tags:
+        - Personal Details
+      summary: Get personal details by coach ID
+      description: Retrieve personal details for all clients assigned to a specific coach
+      parameters:
+        - name: coachId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Coach ID
+      responses:
+        '200':
+          description: Personal details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PersonalDetails'
+
+  /personal-details/{personalId}:
+    get:
+      tags:
+        - Personal Details
+      summary: Get personal details by personal ID
+      description: Retrieve personal details for a specific personal ID
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal details ID
+      responses:
+        '200':
+          description: Personal details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PersonalDetails'
+        '404':
+          description: Personal details not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Personal Details
+      summary: Update personal details
+      description: Update personal details for a specific personal ID
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal details ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applicant_type:
+                  type: string
+                  enum: [PrimaryApplicant, SecondaryApplicant]
+                salutation:
+                  type: string
+                  maxLength: 10
+                first_name:
+                  type: string
+                  maxLength: 100
+                last_name:
+                  type: string
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                  maxLength: 20
+                # ... other optional fields
+      responses:
+        '200':
+          description: Personal details updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PersonalDetails'
+        '404':
+          description: Personal details not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Personal Details
+      summary: Delete personal details
+      description: Delete personal details for a specific personal ID
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal details ID
+      responses:
+        '200':
+          description: Personal details deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Personal details not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Employment Endpoints
+  /employment:
+    post:
+      tags:
+        - Employment
+      summary: Create employment details
+      description: Create new employment details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employment_type:
+                  type: string
+                  enum: [PrimaryEmployment, SecondaryEmployment]
+                occupation:
+                  type: string
+                  maxLength: 200
+                contract_type:
+                  type: string
+                  maxLength: 100
+                contract_duration:
+                  type: string
+                  maxLength: 100
+                employer_name:
+                  type: string
+                  maxLength: 200
+                employed_since:
+                  type: string
+                  format: date
+              required:
+                - employment_type
+                - occupation
+                - contract_type
+                - employer_name
+                - employed_since
+      responses:
+        '201':
+          description: Employment details created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EmploymentDetails'
+
+  /employment/{id}:
+    get:
+      tags:
+        - Employment
+      summary: Get employment details by ID
+      description: Retrieve specific employment details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Employment ID
+      responses:
+        '200':
+          description: Employment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EmploymentDetails'
+
+    put:
+      tags:
+        - Employment
+      summary: Update employment details
+      description: Update specific employment details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Employment ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employment_type:
+                  type: string
+                  enum: [PrimaryEmployment, SecondaryEmployment]
+                occupation:
+                  type: string
+                  maxLength: 200
+                contract_type:
+                  type: string
+                  maxLength: 100
+                contract_duration:
+                  type: string
+                  maxLength: 100
+                employer_name:
+                  type: string
+                  maxLength: 200
+                employed_since:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Employment details updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/EmploymentDetails'
+
+    delete:
+      tags:
+        - Employment
+      summary: Delete employment details
+      description: Delete specific employment details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Employment ID
+      responses:
+        '200':
+          description: Employment details deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /employment/personal/{personalId}:
+    get:
+      tags:
+        - Employment
+      summary: Get employment details by personal ID
+      description: Retrieve all employment details for a specific person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Employment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EmploymentDetails'
+
+  # Income Endpoints
+  /income:
+    post:
+      tags:
+        - Income
+      summary: Create income details
+      description: Create new income details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gross_income:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                net_income:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                tax_class:
+                  type: string
+                  maxLength: 10
+                tax_id:
+                  type: string
+                  maxLength: 100
+                number_of_salaries:
+                  type: integer
+                  minimum: 1
+                  maximum: 24
+                  default: 12
+                child_benefit:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                other_income:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                income_trade_business:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                income_self_employed_work:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                income_side_job:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+              required:
+                - gross_income
+                - net_income
+                - tax_class
+      responses:
+        '201':
+          description: Income details created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/IncomeDetails'
+
+    get:
+      tags:
+        - Income
+      summary: Get all income details
+      description: Retrieve all income details
+      responses:
+        '200':
+          description: Income details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/IncomeDetails'
+
+  /income/{id}:
+    get:
+      tags:
+        - Income
+      summary: Get income details by ID
+      description: Retrieve specific income details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Income ID
+      responses:
+        '200':
+          description: Income details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/IncomeDetails'
+
+    put:
+      tags:
+        - Income
+      summary: Update income details
+      description: Update specific income details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Income ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                gross_income:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                net_income:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                tax_class:
+                  type: string
+                  maxLength: 10
+      responses:
+        '200':
+          description: Income details updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/IncomeDetails'
+
+    delete:
+      tags:
+        - Income
+      summary: Delete income details
+      description: Delete specific income details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Income ID
+      responses:
+        '200':
+          description: Income details deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /income/personal/{personalId}:
+    get:
+      tags:
+        - Income
+      summary: Get income details by personal ID
+      description: Retrieve all income details for a specific person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Income details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/IncomeDetails'
+
+  # Expenses Endpoints
+  /expenses:
+    post:
+      tags:
+        - Expenses
+      summary: Create expense details
+      description: Create new expense details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cold_rent:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                electricity:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                living_expenses:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                gas:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                telecommunication:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                account_maintenance_fee:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                alimony:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                subscriptions:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                other_expenses:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+      responses:
+        '201':
+          description: Expense details created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExpensesDetails'
+
+    get:
+      tags:
+        - Expenses
+      summary: Get all expense details
+      description: Retrieve all expense details
+      responses:
+        '200':
+          description: Expense details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExpensesDetails'
+
+  /expenses/{id}:
+    get:
+      tags:
+        - Expenses
+      summary: Get expense details by ID
+      description: Retrieve specific expense details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Expense ID
+      responses:
+        '200':
+          description: Expense details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExpensesDetails'
+
+    put:
+      tags:
+        - Expenses
+      summary: Update expense details
+      description: Update specific expense details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Expense ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cold_rent:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                electricity:
+                  type: number
+                  format: decimal
+                  minimum: 0
+      responses:
+        '200':
+          description: Expense details updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExpensesDetails'
+
+    delete:
+      tags:
+        - Expenses
+      summary: Delete expense details
+      description: Delete specific expense details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Expense ID
+      responses:
+        '200':
+          description: Expense details deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /expenses/personal/{personalId}:
+    get:
+      tags:
+        - Expenses
+      summary: Get expense details by personal ID
+      description: Retrieve all expense details for a specific person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Expense details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExpensesDetails'
+
+  # Assets Endpoints
+  /assets:
+    post:
+      tags:
+        - Assets
+      summary: Create asset record
+      description: Create new asset record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                real_estate:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                securities:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                bank_deposits:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                building_savings:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                insurance_values:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+                other_assets:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  default: 0
+      responses:
+        '201':
+          description: Asset record created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Asset'
+
+    get:
+      tags:
+        - Assets
+      summary: Get all asset records
+      description: Retrieve all asset records
+      responses:
+        '200':
+          description: Asset records retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Asset'
+
+  /assets/{id}:
+    get:
+      tags:
+        - Assets
+      summary: Get asset record by ID
+      description: Retrieve specific asset record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Asset ID
+      responses:
+        '200':
+          description: Asset record retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Asset'
+
+    put:
+      tags:
+        - Assets
+      summary: Update asset record
+      description: Update specific asset record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Asset ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                real_estate:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                securities:
+                  type: number
+                  format: decimal
+                  minimum: 0
+      responses:
+        '200':
+          description: Asset record updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Asset'
+
+    delete:
+      tags:
+        - Assets
+      summary: Delete asset record
+      description: Delete specific asset record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Asset ID
+      responses:
+        '200':
+          description: Asset record deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /assets/personal/{personalId}:
+    get:
+      tags:
+        - Assets
+      summary: Get asset records by personal ID
+      description: Retrieve all asset records for a specific person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Asset records retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Asset'
+
+  # Liabilities Endpoints
+  /liabilities:
+    post:
+      tags:
+        - Liabilities
+      summary: Create liability record
+      description: Create new liability record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                loan_type:
+                  type: string
+                  enum: [PersonalLoan, HomeLoan, CarLoan, BusinessLoan, EducationLoan, OtherLoan]
+                loan_bank:
+                  type: string
+                  maxLength: 200
+                loan_amount:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                loan_monthly_rate:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                loan_interest:
+                  type: number
+                  format: decimal
+                  minimum: 0
+                  maximum: 100
+              required:
+                - loan_type
+      responses:
+        '201':
+          description: Liability record created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Liability'
+
+    get:
+      tags:
+        - Liabilities
+      summary: Get all liability records
+      description: Retrieve all liability records
+      responses:
+        '200':
+          description: Liability records retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Liability'
+
+  /liabilities/{id}:
+    get:
+      tags:
+        - Liabilities
+      summary: Get liability record by ID
+      description: Retrieve specific liability record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Liability ID
+      responses:
+        '200':
+          description: Liability record retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Liability'
+
+    put:
+      tags:
+        - Liabilities
+      summary: Update liability record
+      description: Update specific liability record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Liability ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                loan_type:
+                  type: string
+                  enum: [PersonalLoan, HomeLoan, CarLoan, BusinessLoan, EducationLoan, OtherLoan]
+                loan_bank:
+                  type: string
+                  maxLength: 200
+                loan_amount:
+                  type: number
+                  format: decimal
+                  minimum: 0
+      responses:
+        '200':
+          description: Liability record updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Liability'
+
+    delete:
+      tags:
+        - Liabilities
+      summary: Delete liability record
+      description: Delete specific liability record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Liability ID
+      responses:
+        '200':
+          description: Liability record deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /liabilities/personal/{personalId}:
+    get:
+      tags:
+        - Liabilities
+      summary: Get liability records by personal ID
+      description: Retrieve all liability records for a specific person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Liability records retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Liability'
+
+  # Person Aggregation Endpoints
+  /person/{personalId}/complete:
+    get:
+      tags:
+        - Person
+      summary: Get complete person profile
+      description: Retrieve complete profile with all financial data for a person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Complete profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          personalDetails:
+                            $ref: '#/components/schemas/PersonalDetails'
+                          employmentDetails:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/EmploymentDetails'
+                          incomeDetails:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/IncomeDetails'
+                          expensesDetails:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ExpensesDetails'
+                          assets:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Asset'
+                          liabilities:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Liability'
+
+  /person/{personalId}/summary:
+    get:
+      tags:
+        - Person
+      summary: Get person summary
+      description: Retrieve summary information for a person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Person summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          personal_id:
+                            type: string
+                            format: uuid
+                          first_name:
+                            type: string
+                          last_name:
+                            type: string
+                          email:
+                            type: string
+                          total_income:
+                            type: number
+                            format: decimal
+                          total_expenses:
+                            type: number
+                            format: decimal
+                          total_assets:
+                            type: number
+                            format: decimal
+                          total_liabilities:
+                            type: number
+                            format: decimal
+                          net_worth:
+                            type: number
+                            format: decimal
+
+  /person/{personalId}/financial-summary:
+    get:
+      tags:
+        - Person
+      summary: Get financial summary
+      description: Retrieve detailed financial summary for a person
+      parameters:
+        - name: personalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Personal ID
+      responses:
+        '200':
+          description: Financial summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          income_summary:
+                            type: object
+                            properties:
+                              total_gross_income:
+                                type: number
+                                format: decimal
+                              total_net_income:
+                                type: number
+                                format: decimal
+                              income_sources:
+                                type: integer
+                          expense_summary:
+                            type: object
+                            properties:
+                              total_expenses:
+                                type: number
+                                format: decimal
+                              monthly_expenses:
+                                type: number
+                                format: decimal
+                          asset_summary:
+                            type: object
+                            properties:
+                              total_assets:
+                                type: number
+                                format: decimal
+                              asset_distribution:
+                                type: object
+                          liability_summary:
+                            type: object
+                            properties:
+                              total_liabilities:
+                                type: number
+                                format: decimal
+                              monthly_payments:
+                                type: number
+                                format: decimal
+
+  /person/coach/{coachId}:
+    get:
+      tags:
+        - Person
+      summary: Get persons by coach ID
+      description: Retrieve all persons assigned to a specific coach
+      parameters:
+        - name: coachId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Coach ID
+      responses:
+        '200':
+          description: Persons retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            personal_id:
+                              type: string
+                              format: uuid
+                            first_name:
+                              type: string
+                            last_name:
+                              type: string
+                            email:
+                              type: string
+                            created_at:
+                              type: string
+                              format: date-time
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Personal Details
+    description: Personal information management
+  - name: Employment
+    description: Employment details management
+  - name: Income
+    description: Income information management
+  - name: Expenses
+    description: Expense tracking
+  - name: Assets
+    description: Asset portfolio management
+  - name: Liabilities
+    description: Debt and liability management
+  - name: Person
+    description: Complete profile aggregation 

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/YWC.png" />
+    <link rel="apple-touch-icon" type="image/png" href="/YWC.png" />
+    
+    <!-- Professional Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- App Meta Information -->
+    <title>Your Wealth Coach - Professional Financial Coaching Platform</title>
+    <meta name="description" content="Professional financial coaching and wealth management platform - Transform your financial future with expert guidance.">
+    <meta name="keywords" content="financial coaching, wealth management, financial planning, investment advice, personal finance">
+    <meta name="author" content="Your Wealth Coach">
+    <meta name="theme-color" content="#3B82F6">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Your Wealth Coach - Professional Financial Coaching Platform">
+    <meta property="og:description" content="Transform your financial future with expert financial coaching and wealth management services.">
+    <meta property="og:site_name" content="Your Wealth Coach">
+    <meta property="og:url" content="https://yourwealth.coach">
+    <meta property="og:image" content="/YWC.png">
+    
+    <!-- Prevent FOUC (Flash of Unstyled Content) -->
+    <style>
+      html {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      
+      body {
+        margin: 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        overflow-x: hidden;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
+      /* Loading spinner for initial load */
+      .initial-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      
+      .loader-content {
+        text-align: center;
+        animation: fade-in-up 0.6s ease-out;
+      }
+      
+      .loader-logo {
+        width: 60px;
+        height: 60px;
+        background: url('/YWC.png') center/contain no-repeat;
+        border-radius: 16px;
+        margin: 0 auto 16px;
+        box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+        animation: pulse-logo 2s ease-in-out infinite;
+      }
+      
+      .loader-text {
+        color: #475569;
+        font-weight: 600;
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      
+      .loader-subtext {
+        color: #64748b;
+        font-weight: 400;
+        font-size: 14px;
+      }
+      
+      @keyframes fade-in-up {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes pulse-logo {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Initial Loading Screen -->
+    <div id="initial-loader" class="initial-loader">
+      <div class="loader-content">
+        <div class="loader-logo"></div>
+        <div class="loader-text">Your Wealth Coach</div>
+        <div class="loader-subtext">Loading your financial dashboard...</div>
+      </div>
+    </div>
+    
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Remove initial loader after app loads -->
+    <script>
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            loader.style.transition = 'opacity 0.5s ease-out';
+            setTimeout(function() {
+              loader.remove();
+            }, 500);
+          }
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "description": "Frontend YWC-UI project for a financial coaching platform. It supports login roles: ADMIN, COACH, CLIENT. Each role has a dashboard and functionality mapped 1-to-1 to backend API (via Postman collection). No additional logic should be added. Forms are role-sensitive, meaning only correct personId is used. UI is responsive, theme-aware, and uses YWC-UI components.",
+  "tech_stack": ["React", "Vite", "TypeScript", "TailwindCSS", "YWC-UI", "Axios", "React Router"],
+  "backend_api_source": "Postman Collection",
+  "constraints": [
+    "Only expose functionalities available in the Postman collection",
+    "Use JWT auth to manage session",
+    "Role-based dashboard and protected routes",
+    "Forms must use correct personId depending on login role",
+    "Each role has a unique theme",
+    "Use YWC-UI components for consistency"
+  ],
+  "output_structure": {
+    "src/": {
+      "components/": "Common reusable components (forms, loaders, toasts, etc.)",
+      "pages/": "Role-based screens",
+      "services/": "API logic (axios)",
+      "context/": "Auth context with role guards",
+      "types/": "TypeScript interfaces and enums",
+      "routes/": "Routing logic with guards",
+      "App.tsx": "Entry with theme provider",
+      "main.tsx": "Root render logic"
+    },
+    "public/": "favicon and basic static assets",
+    ".env": "API base URL",
+    "vite.config.ts": "Build config",
+    "tailwind.config.ts": "Styling config",
+    "index.html": "Page template"
+  }
+}

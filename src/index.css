@@ -1,0 +1,404 @@
+@import "tailwindcss";
+
+/* Tailwind v4 Custom Configuration */
+@theme {
+  --font-family-inter: 'Inter', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-family-lexend: 'Lexend', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  /* Professional color palette for financial platform */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-900: #1e3a8a;
+  
+  --color-success-500: #10b981;
+  --color-success-600: #047857;
+  
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+
+/* CSS Custom Properties for Dynamic Theming */
+:root {
+  /* Theme colors will be set by ThemeContext */
+  --theme-primary: #3b82f6;
+  --theme-primary-hover: #2563eb;
+  --theme-primary-light: #dbeafe;
+  --theme-secondary: #6b7280;
+  --theme-accent: #10b981;
+  --theme-background: #f9fafb;
+  --theme-surface: #ffffff;
+  --theme-surface-hover: #f3f4f6;
+  --theme-text: #111827;
+  --theme-text-secondary: #6b7280;
+  --theme-border: #e5e7eb;
+  --theme-success: #10b981;
+  --theme-warning: #f59e0b;
+  --theme-error: #ef4444;
+}
+
+/* Dark mode variables */
+.dark {
+  --theme-primary: #60a5fa;
+  --theme-primary-hover: #3b82f6;
+  --theme-primary-light: #1e3a8a;
+  --theme-secondary: #9ca3af;
+  --theme-accent: #34d399;
+  --theme-background: #111827;
+  --theme-surface: #1f2937;
+  --theme-surface-hover: #374151;
+  --theme-text: #f9fafb;
+  --theme-text-secondary: #d1d5db;
+  --theme-border: #374151;
+  --theme-success: #34d399;
+  --theme-warning: #fbbf24;
+  --theme-error: #f87171;
+}
+
+/* Base Styles */
+html {
+  font-family: var(--font-family-inter);
+  line-height: 1.6;
+  font-weight: 400;
+  font-size: 16px;
+
+  color-scheme: light dark;
+
+  /* Improved text rendering */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Better focus management for accessibility */
+:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+
+/* Professional body styles */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--theme-background);
+  color: var(--theme-text);
+  font-family: var(--font-family-inter);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Root container styling */
+#root {
+  min-height: 100vh;
+  background-color: var(--theme-background);
+  color: var(--theme-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Typography improvements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-lexend);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--theme-text);
+  margin: 0;
+}
+
+/* Professional button reset */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+  overflow: visible;
+  text-transform: none;
+  appearance: button;
+  cursor: pointer;
+}
+
+/* Link improvements */
+a {
+  color: var(--theme-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--theme-primary-hover);
+}
+
+/* Input and form styling */
+input, textarea, select {
+  background-color: var(--theme-surface);
+  color: var(--theme-text);
+  border-color: var(--theme-border);
+  transition: all 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 3px var(--theme-primary-light);
+}
+
+/* Card and surface styling */
+.card, .surface {
+  background-color: var(--theme-surface);
+  border-color: var(--theme-border);
+  color: var(--theme-text);
+}
+
+/* Custom utility classes for the financial platform */
+.font-inter {
+  font-family: var(--font-family-inter);
+}
+
+.font-lexend {
+  font-family: var(--font-family-lexend);
+}
+
+/* Theme-aware utility classes */
+.bg-primary {
+  background-color: var(--theme-primary);
+}
+
+.bg-surface {
+  background-color: var(--theme-surface);
+}
+
+.bg-surface-hover {
+  background-color: var(--theme-surface-hover);
+}
+
+.text-primary {
+  color: var(--theme-primary);
+}
+
+.text-secondary {
+  color: var(--theme-text-secondary);
+}
+
+.border-theme {
+  border-color: var(--theme-border);
+}
+
+/* Smooth animations for better UX */
+.animate-in {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Professional scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--theme-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text-secondary);
+}
+
+/* Remove any default button styling conflicts */
+button:focus {
+  outline: none;
+}
+
+/* Ensure proper font loading fallbacks */
+.font-loading {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Enhanced dropdown animations */
+.dropdown-enter {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+}
+
+.dropdown-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: all 200ms ease-out;
+}
+
+.dropdown-exit {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.dropdown-exit-active {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+  transition: all 150ms ease-in;
+}
+
+/* Professional shadows */
+.shadow-soft {
+  box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-medium {
+  box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-strong {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 2px 5px 0px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode specific adjustments */
+.dark .shadow-soft {
+  box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.25), 0 10px 20px -2px rgba(0, 0, 0, 0.15);
+}
+
+.dark .shadow-medium {
+  box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.35), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+}
+
+.dark .shadow-strong {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.45), 0 2px 5px 0px rgba(0, 0, 0, 0.25);
+}
+
+/* Responsive Design Improvements */
+@media (max-width: 640px) {
+  /* Mobile optimizations */
+  body {
+    font-size: 14px;
+  }
+  
+  .text-xl {
+    font-size: 1.125rem;
+  }
+  
+  .text-lg {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Tablet optimizations */
+  .max-w-7xl {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Center-aligned container improvements */
+.container-center {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-center {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-center {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Better mobile navigation */
+@media (max-width: 1024px) {
+  .mobile-menu {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+  
+  .mobile-menu.open {
+    transform: translateX(0);
+  }
+}
+
+/* Professional navigation improvements */
+.nav-item {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  transform: translateY(-1px);
+}
+
+/* Logo sizing improvements */
+.logo-container {
+  display: flex;
+  align-items: center;
+  min-width: fit-content;
+  }
+
+.logo-image {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: contain;
+  border-radius: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .logo-image {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .logo-text {
+    display: none;
+  }
+}
+
+/* Navigation spacing improvements */
+.nav-spacing {
+  gap: 0.25rem;
+}
+
+@media (min-width: 1024px) {
+  .nav-spacing {
+    gap: 0.5rem;
+  }
+}
+
+/* Dropdown positioning fixes */
+.dropdown-menu {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+@media (max-width: 640px) {
+  .dropdown-menu {
+    left: 0 !important;
+    right: 0 !important;
+    width: calc(100vw - 2rem);
+    margin: 0 1rem;
+  }
+}
