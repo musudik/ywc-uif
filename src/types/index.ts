@@ -274,4 +274,19 @@ export interface Person {
   liabilities: Liability[];
   familyDetails?: FamilyDetails;
   children?: Children[];
+}
+
+export type FamilyRelation = 'Spouse' | 'Child' | 'Parent' | 'Other';
+
+export interface FamilyMember {
+  family_member_id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  relation: FamilyRelation;
+  birth_date: string; // ISO string
+  nationality: string;
+  tax_id?: string;
+  created_at: Date;
+  updated_at: Date;
 } 

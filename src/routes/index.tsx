@@ -18,6 +18,7 @@ import ClientDashboard from '../pages/dashboards/ClientDashboard';
 
 // Form Pages
 import PersonalDetailsForm from '../pages/forms/PersonalDetailsForm';
+import FamilyDetailsForm from '../pages/forms/FamilyDetailsForm';
 import EmploymentForm from '../pages/forms/EmploymentForm';
 import IncomeForm from '../pages/forms/IncomeForm';
 import ExpensesForm from '../pages/forms/ExpensesForm';
@@ -172,6 +173,14 @@ export const router = createBrowserRouter([
                 element: (
                   <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
                     <PersonalDetailsForm />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'family-details/:personalId?',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <FamilyDetailsForm />
                   </RoleGuard>
                 ),
               },
@@ -436,6 +445,13 @@ export const getNavigationItems = (userRole: UserRole): NavigationItem[] => {
             label: 'Personal Information',
             path: '/dashboard/forms/personal-details',
             icon: 'user',
+            roles: [UserRole.CLIENT],
+          },
+          {
+            id: 'family-details',
+            label: 'Family Information',
+            path: '/dashboard/forms/family-details',
+            icon: 'users',
             roles: [UserRole.CLIENT],
           },
           {

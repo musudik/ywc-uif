@@ -54,6 +54,7 @@ export default function AdminDashboard() {
           // Check each form section
           const formChecks = [
             { service: () => formService.getPersonalDetailsById(userId), name: 'Personal Details' },
+            { service: () => formService.getFamilyMembersByUserId(userId), name: 'Family Details' },
             { service: () => formService.getEmploymentById(userId), name: 'Employment' },
             { service: () => formService.getIncomeById(userId), name: 'Income' },
             { service: () => formService.getExpensesById(userId), name: 'Expenses' },
@@ -63,17 +64,34 @@ export default function AdminDashboard() {
 
           for (const formCheck of formChecks) {
             try {
-              await formCheck.service();
-              clientCompletedForms++;
-              
-              // Add to recent activities (only for recently created clients)
-              // Since we don't have created_at in the client object, we'll skip time-based filtering for now
-              activities.push({
-                user: `${client.first_name} ${client.last_name}`,
-                action: `completed ${formCheck.name} form`,
-                time: 'Recently',
-                type: 'form'
-              });
+              const result = await formCheck.service();
+              // Special handling for family details which returns an array
+              if (formCheck.name === 'Family Details') {
+                if (result && Array.isArray(result) && result.length > 0) {
+                  clientCompletedForms++;
+                  
+                  // Add to recent activities (only for recently created clients)
+                  // Since we don't have created_at in the client object, we'll skip time-based filtering for now
+                  activities.push({
+                    user: `${client.first_name} ${client.last_name}`,
+                    action: `completed ${formCheck.name} form`,
+                    time: 'Recently',
+                    type: 'form'
+                  });
+                }
+              } else {
+                // For other forms, just check if result exists
+                clientCompletedForms++;
+                
+                // Add to recent activities (only for recently created clients)
+                // Since we don't have created_at in the client object, we'll skip time-based filtering for now
+                activities.push({
+                  user: `${client.first_name} ${client.last_name}`,
+                  action: `completed ${formCheck.name} form`,
+                  time: 'Recently',
+                  type: 'form'
+                });
+              }
             } catch (error) {
               // Form not completed, continue
             }

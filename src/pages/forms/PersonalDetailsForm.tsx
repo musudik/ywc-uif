@@ -222,7 +222,7 @@ export default function PersonalDetailsForm() {
       
       // Navigate based on user role, passing the personal_id
       if (user?.role === 'CLIENT') {
-        navigate(`/dashboard/forms/employment?personal_id=${personalDetails.personal_id}`);
+        navigate(`/dashboard/forms/family-details?personal_id=${personalDetails.personal_id}`);
       } else {
         // For coaches/admins, stay on the form in read-only mode
         // navigate('/dashboard');

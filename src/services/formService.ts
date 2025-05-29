@@ -9,7 +9,9 @@ import type {
   Person,
   ApiResponse,
   PaginatedResponse,
-  PaginationOptions
+  PaginationOptions,
+  FamilyMember,
+  FamilyRelation
 } from '../types';
 
 export class FormService {
@@ -326,6 +328,72 @@ export class FormService {
     const response = await apiService.delete(`/liabilities/${liabilityId}`);
     if (!response.success) {
       throw new Error(response.message || 'Failed to delete liability');
+    }
+  }
+
+  // ===========================
+  // FAMILY MEMBERS OPERATIONS
+  // ===========================
+
+  async createFamilyMember(data: Omit<FamilyMember, 'family_member_id' | 'created_at' | 'updated_at'>): Promise<FamilyMember> {
+    const response = await apiService.post<FamilyMember>('/family-members', data);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to create family member');
+  }
+
+  async getAllFamilyMembers(): Promise<FamilyMember[]> {
+    const response = await apiService.get<FamilyMember[]>('/family-members');
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to get all family members');
+  }
+
+  async getFamilyMembersByUserId(userId: string): Promise<FamilyMember[]> {
+    const response = await apiService.get<FamilyMember[]>(`/family-members/user/${userId}`);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to get family members by user');
+  }
+
+  async getFamilyMembersByUserAndRelation(userId: string, relation: FamilyRelation): Promise<FamilyMember[]> {
+    const response = await apiService.get<FamilyMember[]>(`/family-members/user/${userId}/relation/${relation}`);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to get family members by user and relation');
+  }
+
+  async getFamilyMemberById(familyMemberId: string): Promise<FamilyMember> {
+    const response = await apiService.get<FamilyMember>(`/family-members/${familyMemberId}`);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to get family member');
+  }
+
+  async updateFamilyMember(familyMemberId: string, data: Partial<FamilyMember>): Promise<FamilyMember> {
+    const response = await apiService.put<FamilyMember>(`/family-members/${familyMemberId}`, data);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    throw new Error(response.message || 'Failed to update family member');
+  }
+
+  async deleteFamilyMember(familyMemberId: string): Promise<void> {
+    const response = await apiService.delete(`/family-members/${familyMemberId}`);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to delete family member');
+    }
+  }
+
+  async deleteAllUserFamilyMembers(userId: string): Promise<void> {
+    const response = await apiService.delete(`/family-members/user/${userId}`);
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to delete all user family members');
     }
   }
 

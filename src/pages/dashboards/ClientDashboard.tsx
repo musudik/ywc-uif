@@ -8,6 +8,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 interface ClientProgress {
   personalDetails: boolean;
+  familyDetails: boolean;
   employment: boolean;
   income: boolean;
   expenses: boolean;
@@ -33,6 +34,7 @@ export default function ClientDashboard() {
         const userId = user.id;
         const progressStatus: ClientProgress = {
           personalDetails: false,
+          familyDetails: false,
           employment: false,
           income: false,
           expenses: false,
@@ -46,6 +48,14 @@ export default function ClientDashboard() {
           progressStatus.personalDetails = true;
         } catch (error) {
           console.log('Personal details not found');
+        }
+
+        // Check Family Details
+        try {
+          await formService.getFamilyMembersByUserId(userId);
+          progressStatus.familyDetails = true;
+        } catch (error) {
+          console.log('Family details not found');
         }
 
         // Check Employment
@@ -94,6 +104,7 @@ export default function ClientDashboard() {
         // Set all to false if there's an error
         setProgress({
           personalDetails: false,
+          familyDetails: false,
           employment: false,
           income: false,
           expenses: false,
@@ -118,6 +129,7 @@ export default function ClientDashboard() {
             const userId = user.id;
             const progressStatus: ClientProgress = {
               personalDetails: false,
+              familyDetails: false,
               employment: false,
               income: false,
               expenses: false,
@@ -133,6 +145,13 @@ export default function ClientDashboard() {
               console.log('Personal details not found');
             }
 
+            // Check Family Details
+            try {
+              await formService.getFamilyMembersByUserId(userId);
+              progressStatus.familyDetails = true;
+            } catch (error) {
+              console.log('Family details not found');
+            }
             // Check Employment
             try {
               const employment = await formService.getEmploymentById(userId);
@@ -207,6 +226,13 @@ export default function ClientDashboard() {
       path: '/dashboard/forms/personal-details',
       icon: '👤',
       completed: progress?.personalDetails || false,
+    },
+    {
+      title: 'Family Details',
+      description: 'Family information and relationships',
+      path: '/dashboard/forms/family-details',
+      icon: '👪',
+      completed: progress?.familyDetails || false,
     },
     {
       title: 'Employment',

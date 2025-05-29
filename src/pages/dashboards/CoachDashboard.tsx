@@ -53,6 +53,7 @@ export default function CoachDashboard() {
           try {
             const progressStatus = {
               personalDetails: false,
+              familyDetails: false,
               employment: false,
               income: false,
               expenses: false,
@@ -62,12 +63,20 @@ export default function CoachDashboard() {
 
             const userId = client.user_id;
 
-           // Check Personal Details
+            // Check Personal Details
             try {
               await formService.getPersonalDetailsById(userId);
               progressStatus.personalDetails = true;
             } catch (error) {
               console.log('Personal details not found');
+            }
+
+            // Check Family Details
+            try {
+              const familyMembers = await formService.getFamilyMembersByUserId(userId);
+              progressStatus.familyDetails = familyMembers && familyMembers.length > 0;
+            } catch (error) {
+              console.log('Family details not found');
             }
 
             // Check Employment
@@ -112,7 +121,7 @@ export default function CoachDashboard() {
 
 
             const completedSections = Object.values(progressStatus).filter(Boolean).length;
-            const progressPercentage = Math.round((completedSections / 6) * 100);
+            const progressPercentage = Math.round((completedSections / 7) * 100);
 
             // Determine status based on progress
             let status = 'inactive';
