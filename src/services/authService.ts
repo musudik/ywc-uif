@@ -1,5 +1,5 @@
 import { apiService } from './api';
-import type { User, UserRole, ApiResponse } from '../types';
+import type { User, UserRole } from '../types';
 
 export interface LoginRequest {
   email: string;
@@ -59,7 +59,7 @@ export class AuthService {
 
   // Get coach's clients (Coach/Admin only)
   async getCoachClients(): Promise<Array<{
-    personal_id: string;
+    user_id: string;
     first_name: string;
     last_name: string;
     email: string;
@@ -67,7 +67,7 @@ export class AuthService {
     created_at: string;
   }>> {
     const response = await apiService.get<Array<{
-      personal_id: string;
+      user_id: string;
       first_name: string;
       last_name: string;
       email: string;
@@ -100,20 +100,50 @@ export class AuthService {
         last_name: string;
         email: string;
         role: string;
-      }>>('/users?role=COACH');
+      }>>('/user/users/COACH');
       
       if (response.success && response.data) {
-        return response.data.filter(user => user.role === 'COACH');
+        return response.data;
       }
     } catch (error) {
       console.log('No dedicated coaches endpoint available, using fallback');
     }
     
     // Fallback: Return mock coaches for now
-    return [
-      { id: 'coach-1', first_name: 'John', last_name: 'Smith', email: 'john.smith@ywc.com' },
-      { id: 'coach-2', first_name: 'Sarah', last_name: 'Johnson', email: 'sarah.johnson@ywc.com' },
-      { id: 'coach-3', first_name: 'Michael', last_name: 'Brown', email: 'michael.brown@ywc.com' },
+    return [    
+    ];
+  }
+
+
+  // Get all clients (Admin only) - for now we'll simulate this by getting all users with role CLIENT
+  // This is a temporary solution until a proper /clients endpoint is available
+  async getAllClients(): Promise<Array<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  }>> {
+    // For now, we'll return mock data since there's no dedicated coaches endpoint
+    // In a real implementation, this would call a /users?role=COACH endpoint
+    try {
+      // Try to get users with COACH role - this endpoint may not exist yet
+      const response = await apiService.get<Array<{
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        role: string;
+      }>>('/user/users/CLIENT');
+      
+      if (response.success && response.data) {
+        return response.data;
+      }
+    } catch (error) {
+      console.log('No dedicated clients endpoint available, using fallback');
+    }
+    
+    // Fallback: Return mock clients for now
+    return [    
     ];
   }
 
@@ -146,6 +176,39 @@ export class AuthService {
   // Check if user is authenticated
   isAuthenticated(): boolean {
     return !!apiService.getToken();
+  }
+
+  // Get all users (Admin only)
+  async getAllUsers(): Promise<User[]> {
+    const response = await apiService.get<User[]>('/users');
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error(response.message || 'Failed to get users');
+  }
+
+  // Create new user (Admin only)
+  async createUser(userData: RegisterRequest): Promise<User> {
+    const response = await apiService.post<User>('/users', userData);
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error(response.message || 'Failed to create user');
+  }
+
+  // Update user (Admin only)
+  async updateUser(userId: string, userData: Partial<User>): Promise<User> {
+    const response = await apiService.put<User>(`/users/${userId}`, userData);
+    
+    if (response.success && response.data) {
+      return response.data;
+    }
+    
+    throw new Error(response.message || 'Failed to update user');
   }
 
   // Extract role from JWT token (basic implementation)

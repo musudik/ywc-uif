@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotification } from '../../context/NotificationContext';
+import { authService } from '../../services/authService';
+import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
@@ -13,32 +15,195 @@ interface CoachStats {
   pendingReviews: number;
 }
 
+interface ClientProgress {
+  personal_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  created_at: string;
+  applicant_type: string;
+  last_activity: string;
+  status: string;
+  progress: number;
+  completedSections: number;
+}
+
 export default function CoachDashboard() {
   const { user } = useAuth();
   const { colors } = useTheme();
-  const { showInfo } = useNotification();
+  const { showInfo, showError } = useNotification();
   const [stats, setStats] = useState<CoachStats | null>(null);
+  const [recentClients, setRecentClients] = useState<ClientProgress[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setStats({
-          totalClients: 23,
-          activeClients: 18,
-          completedForms: 67,
-          pendingReviews: 5,
-        });
-      } catch (error) {
-        console.error('Failed to load stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStats();
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load coach's clients
+      const clients = await authService.getCoachClients();
+      
+      // Calculate progress for each client
+      const clientsWithProgress = await Promise.all(
+        clients.map(async (client) => {
+          try {
+            const progressStatus = {
+              personalDetails: false,
+              employment: false,
+              income: false,
+              expenses: false,
+              assets: false,
+              liabilities: false,
+            };
+
+            const userId = client.user_id;
+
+           // Check Personal Details
+            try {
+              await formService.getPersonalDetailsById(userId);
+              progressStatus.personalDetails = true;
+            } catch (error) {
+              console.log('Personal details not found');
+            }
+
+            // Check Employment
+            try {
+              const employment = await formService.getEmploymentById(userId);
+              progressStatus.employment = employment ? true : false;
+            } catch (error) {
+              console.log('Employment details not found');
+            }
+
+            // Check Income
+            try {
+              const income = await formService.getIncomeById(userId);
+              progressStatus.income = income ? true : false;
+            } catch (error) {
+              console.log('Income details not found');
+            }
+
+            // Check Expenses
+            try {
+              const expenses = await formService.getExpensesById(userId);
+              progressStatus.expenses = expenses ? true : false;
+            } catch (error) {
+              console.log('Expenses details not found');
+            }
+
+            // Check Assets
+            try {
+              const assets = await formService.getAssetById(userId);
+              progressStatus.assets = assets ? true : false;
+            } catch (error) {
+              console.log('Assets details not found');
+            }
+
+            // Check Liabilities
+            try {
+              const liabilities = await formService.getLiabilityById(userId);
+              progressStatus.liabilities = liabilities ? true : false;
+            } catch (error) {
+              console.log('Liabilities details not found');
+            }
+
+
+            const completedSections = Object.values(progressStatus).filter(Boolean).length;
+            const progressPercentage = Math.round((completedSections / 6) * 100);
+
+            // Determine status based on progress
+            let status = 'inactive';
+            if (progressPercentage === 100) {
+              status = 'completed';
+            } else if (progressPercentage > 0) {
+              status = 'active';
+            } else {
+              status = 'pending';
+            }
+
+            // Calculate last activity (mock for now, should come from actual activity data)
+            const createdDate = new Date(client.created_at);
+            const daysSinceCreated = Math.floor((Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+            let lastActivity = '';
+            if (daysSinceCreated === 0) {
+              lastActivity = 'Today';
+            } else if (daysSinceCreated === 1) {
+              lastActivity = '1 day ago';
+            } else if (daysSinceCreated < 7) {
+              lastActivity = `${daysSinceCreated} days ago`;
+            } else if (daysSinceCreated < 30) {
+              lastActivity = `${Math.floor(daysSinceCreated / 7)} week${Math.floor(daysSinceCreated / 7) > 1 ? 's' : ''} ago`;
+            } else {
+              lastActivity = `${Math.floor(daysSinceCreated / 30)} month${Math.floor(daysSinceCreated / 30) > 1 ? 's' : ''} ago`;
+            }
+
+            return {
+              personal_id: client.personal_id,
+              first_name: client.first_name,
+              last_name: client.last_name,
+              email: client.email,
+              created_at: client.created_at,
+              applicant_type: client.applicant_type,
+              last_activity: lastActivity,
+              status,
+              progress: progressPercentage,
+              completedSections,
+            };
+          } catch (error) {
+            console.error('Error calculating progress for client:', client.personal_id, error);
+            return {
+              personal_id: client.personal_id,
+              first_name: client.first_name,
+              last_name: client.last_name,
+              email: client.email,
+              created_at: client.created_at,
+              applicant_type: client.applicant_type,
+              last_activity: 'Unknown',
+              status: 'inactive',
+              progress: 0,
+              completedSections: 0,
+            };
+          }
+        })
+      );
+
+      // Sort by most recent activity
+      clientsWithProgress.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      // Take only the first 4 for recent clients display
+      setRecentClients(clientsWithProgress.slice(0, 4));
+
+      // Calculate stats
+      const totalClients = clientsWithProgress.length;
+      const activeClients = clientsWithProgress.filter(c => c.status === 'active' || c.status === 'completed').length;
+      const completedForms = clientsWithProgress.reduce((sum, client) => sum + client.completedSections, 0);
+      const pendingReviews = clientsWithProgress.filter(c => c.status === 'completed').length;
+
+      setStats({
+        totalClients,
+        activeClients,
+        completedForms,
+        pendingReviews,
+      });
+
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+      showError('Load Failed', 'Failed to load dashboard data');
+      // Set empty data on error
+      setRecentClients([]);
+      setStats({
+        totalClients: 0,
+        activeClients: 0,
+        completedForms: 0,
+        pendingReviews: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return <LoadingSpinner fullScreen text="Loading dashboard..." />;
@@ -75,13 +240,6 @@ export default function CoachDashboard() {
     },
   ];
 
-  const recentClients = [
-    { name: 'Alice Johnson', lastActivity: '2 hours ago', status: 'active', progress: 85 },
-    { name: 'Bob Smith', lastActivity: '1 day ago', status: 'pending', progress: 60 },
-    { name: 'Carol Davis', lastActivity: '3 days ago', status: 'completed', progress: 100 },
-    { name: 'David Wilson', lastActivity: '1 week ago', status: 'inactive', progress: 30 },
-  ];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -96,14 +254,14 @@ export default function CoachDashboard() {
         </div>
         <div className="flex space-x-3">
           <Button
-            onClick={() => showInfo('Data Synced', 'Client data updated successfully')}
+            onClick={() => {
+              loadDashboardData();
+              showInfo('Data Synced', 'Client data updated successfully');
+            }}
             variant="outline"
           >
             Sync Data
           </Button>
-          <Link to="/dashboard/clients/create">
-            <Button>Add New Client</Button>
-          </Link>
         </div>
       </div>
 
@@ -148,52 +306,67 @@ export default function CoachDashboard() {
           </div>
         </div>
         <div className="p-6">
-          <div className="space-y-4">
-            {recentClients.map((client, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div 
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
-                    style={{ backgroundColor: colors.primary }}
-                  >
-                    {client.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">
-                      {client.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Last activity: {client.lastActivity}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {client.progress}% Complete
-                    </p>
-                    <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                      <div 
-                        className="h-2 rounded-full transition-all"
-                        style={{ 
-                          width: `${client.progress}%`,
-                          backgroundColor: colors.primary 
-                        }}
-                      ></div>
+          {recentClients.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-4">👥</div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No Clients Yet
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                You don't have any clients assigned to you yet.
+              </p>
+              <Link to="/dashboard/clients/create">
+                <Button>Add Your First Client</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentClients.map((client, index) => (
+                <div key={index} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium"
+                      style={{ backgroundColor: colors.primary }}
+                    >
+                      {client.first_name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 dark:text-white">
+                        {client.first_name} {client.last_name}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Last activity: {client.last_activity}
+                      </p>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    client.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                    client.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                    client.status === 'completed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
-                  }`}>
-                    {client.status}
-                  </span>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {client.progress}% Complete
+                      </p>
+                      <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
+                        <div 
+                          className="h-2 rounded-full transition-all"
+                          style={{ 
+                            width: `${client.progress}%`,
+                            backgroundColor: colors.primary 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      client.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                      client.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                      client.status === 'completed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                    }`}>
+                      {client.status}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

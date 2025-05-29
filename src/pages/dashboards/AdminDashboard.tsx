@@ -91,6 +91,12 @@ export default function AdminDashboard() {
       icon: '⚙️',
     },
     {
+      title: 'Manage Coaches',
+      description: 'View and manage all coaches in the system',
+      link: '/dashboard/coaches',
+      icon: '👨‍🏫',
+    },
+    {
       title: 'Client Management',
       description: 'Overview of all clients and their coaches',
       link: '/dashboard/clients',

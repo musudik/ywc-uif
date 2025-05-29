@@ -29,6 +29,9 @@ import ClientManagement from '../pages/clients/ClientManagement';
 import ClientProfile from '../pages/clients/ClientProfile';
 import CreateClient from '../pages/clients/CreateClient';
 
+// Coach Management (Admin only)
+import CoachManagement from '../pages/coaches/CoachManagement';
+
 // User Management (Admin only)
 import UserManagement from '../pages/users/UserManagement';
 import CreateUser from '../pages/users/CreateUser';
@@ -99,6 +102,14 @@ export const router = createBrowserRouter([
             element: (
               <RoleGuard allowedRoles={[UserRole.ADMIN]}>
                 <CreateUser />
+              </RoleGuard>
+            ),
+          },
+          {
+            path: 'coaches',
+            element: (
+              <RoleGuard allowedRoles={[UserRole.ADMIN]}>
+                <CoachManagement />
               </RoleGuard>
             ),
           },
@@ -272,17 +283,17 @@ export const getNavigationItems = (userRole: UserRole): NavigationItem[] => {
         roles: [UserRole.ADMIN],
         children: [
           {
-            id: 'users',
-            label: 'User Management',
-            path: '/dashboard/users',
-            icon: 'users',
+            id: 'coaches',
+            label: 'Coaches',
+            path: '/dashboard/coaches',
+            icon: 'coach',
             roles: [UserRole.ADMIN],
           },
           {
-            id: 'create-user',
-            label: 'Create User',
-            path: '/dashboard/users/create',
-            icon: 'user-plus',
+            id: 'clients',
+            label: 'Clients',
+            path: '/dashboard/clients',
+            icon: 'user-group',
             roles: [UserRole.ADMIN],
           },
         ],
