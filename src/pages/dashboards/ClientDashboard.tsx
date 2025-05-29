@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
@@ -22,25 +23,174 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     const loadProgress = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        await new Promise(resolve => setTimeout(resolve, 600));
+        // Check completion status for each section
+        const userId = user.id;
+        const progressStatus: ClientProgress = {
+          personalDetails: false,
+          employment: false,
+          income: false,
+          expenses: false,
+          assets: false,
+          liabilities: false,
+        };
+
+        // Check Personal Details
+        try {
+          await formService.getPersonalDetailsById(userId);
+          progressStatus.personalDetails = true;
+        } catch (error) {
+          console.log('Personal details not found');
+        }
+
+        // Check Employment
+        try {
+          const employment = await formService.getEmploymentById(userId);
+          progressStatus.employment = employment ? true : false;
+        } catch (error) {
+          console.log('Employment details not found');
+        }
+
+        // Check Income
+        try {
+          const income = await formService.getIncomeById(userId);
+          progressStatus.income = income ? true : false;
+        } catch (error) {
+          console.log('Income details not found');
+        }
+
+        // Check Expenses
+        try {
+          const expenses = await formService.getExpensesById(userId);
+          progressStatus.expenses = expenses ? true : false;
+        } catch (error) {
+          console.log('Expenses details not found');
+        }
+
+        // Check Assets
+        try {
+          const assets = await formService.getAssetById(userId);
+          progressStatus.assets = assets ? true : false;
+        } catch (error) {
+          console.log('Assets details not found');
+        }
+
+        // Check Liabilities
+        try {
+          const liabilities = await formService.getLiabilityById(userId);
+          progressStatus.liabilities = liabilities ? true : false;
+        } catch (error) {
+          console.log('Liabilities details not found');
+        }
+
+        setProgress(progressStatus);
+      } catch (error) {
+        console.error('Failed to load progress:', error);
+        // Set all to false if there's an error
         setProgress({
-          personalDetails: true,
-          employment: true,
+          personalDetails: false,
+          employment: false,
           income: false,
           expenses: false,
           assets: false,
           liabilities: false,
         });
-      } catch (error) {
-        console.error('Failed to load progress:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadProgress();
-  }, []);
+  }, [user?.id, user?.updated_at]);
+
+  // Refresh progress when component becomes visible (e.g., returning from forms)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.id) {
+        // Reload progress when tab becomes visible
+        const loadProgress = async () => {
+          try {
+            const userId = user.id;
+            const progressStatus: ClientProgress = {
+              personalDetails: false,
+              employment: false,
+              income: false,
+              expenses: false,
+              assets: false,
+              liabilities: false,
+            };
+
+            // Check Personal Details
+            try {
+              await formService.getPersonalDetailsById(userId);
+              progressStatus.personalDetails = true;
+            } catch (error) {
+              console.log('Personal details not found');
+            }
+
+            // Check Employment
+            try {
+              const employment = await formService.getEmploymentById(userId);
+              progressStatus.employment = employment ? true : false;
+            } catch (error) {
+              console.log('Employment details not found');
+            }
+
+            // Check Income
+            try {
+              const income = await formService.getIncomeById(userId);
+              progressStatus.income = income ? true : false;
+            } catch (error) {
+              console.log('Income details not found');
+            }
+
+            // Check Expenses
+            try {
+              const expenses = await formService.getExpensesById(userId);
+              progressStatus.expenses = expenses ? true : false;
+            } catch (error) {
+              console.log('Expenses details not found');
+            }
+
+            // Check Assets
+            try {
+              const assets = await formService.getAssetById(userId);
+              progressStatus.assets = assets ? true : false;
+            } catch (error) {
+              console.log('Assets details not found');
+            }
+
+            // Check Liabilities
+            try {
+              const liabilities = await formService.getLiabilityById(userId);
+              progressStatus.liabilities = liabilities ? true : false;
+            } catch (error) {
+              console.log('Liabilities details not found');
+            }
+
+            setProgress(progressStatus);
+          } catch (error) {
+            console.error('Failed to refresh progress:', error);
+          }
+        };
+
+        loadProgress();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [user?.id]);
 
   if (loading) {
     return <LoadingSpinner fullScreen text="Loading your profile..." />;
