@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { APP_CONFIG } from '../../config/constants';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import YWCLogo from '../../assets/YWC.gif';
 
 export default function AuthLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -22,12 +23,20 @@ export default function AuthLayout() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-800 dark:to-blue-900">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-black to-black dark:from-black dark:to-black">
         <div className="flex flex-col justify-center items-center w-full p-12 text-white">
           <div className="max-w-md text-center">
-            <h1 className="text-4xl font-bold mb-6">
-              {APP_CONFIG.NAME}
-            </h1>
+            {/* YWC Logo */}
+            <div className="mb-6">
+              <img 
+                src={YWCLogo} 
+                alt="YWC Logo" 
+                className="w-52 h-auto mx-auto mb-4"
+              />
+            </div>
+            <p className="text-xl text-blue-300 mb-8">
+            {APP_CONFIG.NAME}
+            </p>
             <p className="text-xl text-blue-100 mb-8">
               {APP_CONFIG.DESCRIPTION}
             </p>

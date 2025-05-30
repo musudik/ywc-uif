@@ -6,7 +6,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { getNavigationItems } from '../../routes';
 import { APP_CONFIG } from '../../config/constants';
 import Button from '../ui/Button';
-import YWCLogo from '../../assets/YWC.png';
+import YWCLogo from '../../assets/YWC.gif';
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
@@ -108,7 +108,7 @@ export default function DashboardLayout() {
                   <img 
                     src={YWCLogo} 
                     alt="Your Wealth Coach"
-                    className="w-40 h-20 rounded-lg"
+                    className="w-30 h-auto mx-auto rounded-lg"
                   />
                   <div className="flex items-center space-x-2">
                     <span 
