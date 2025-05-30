@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
@@ -9,6 +10,7 @@ import TextInput from '../../components/ui/TextInput';
 export default function AssetsForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { personalId } = useParams();
   const [searchParams] = useSearchParams();
@@ -94,7 +96,7 @@ export default function AssetsForm() {
       const userIdToUse = personalId || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
       
       if (!userIdToUse) {
-        showError('Missing Information', 'Unable to determine user ID for asset record.');
+        showError(t('notifications.error'), 'Unable to determine user ID for asset record.');
         return;
       }
 
@@ -109,12 +111,12 @@ export default function AssetsForm() {
       if (existingAssetId) {
         // Update existing record
         assetDetails = await formService.updateAsset(existingAssetId, formDataForAPI);
-        showSuccess('Asset Details Updated', 'Your asset information has been updated successfully.');
+        showSuccess(t('forms.assets.assetsUpdated'), t('forms.assets.assetsUpdatedMessage'));
         setIsEditMode(false); // Return to read-only mode
       } else {
         // Create new record
         assetDetails = await formService.createAsset(formDataForAPI);
-        showSuccess('Asset Details Saved', 'Your asset information has been saved successfully.');
+        showSuccess(t('forms.assets.assetsSaved'), t('forms.assets.assetsSavedMessage'));
         setExistingAssetId(assetDetails.asset_id);
         setIsEditMode(false); // Return to read-only mode
       }
@@ -124,7 +126,7 @@ export default function AssetsForm() {
         navigate(`/dashboard/forms/liabilities?personal_id=${userIdToUse}`);
       }
     } catch (error) {
-      showError('Save Failed', error instanceof Error ? error.message : 'Failed to save asset details');
+      showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save asset details');
     } finally {
       setLoading(false);
     }
@@ -136,7 +138,7 @@ export default function AssetsForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading asset details...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
           </div>
         </div>
       </div>
@@ -150,20 +152,20 @@ export default function AssetsForm() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Asset Portfolio {existingAssetId ? (isEditMode ? '(Editing)' : '(View)') : '(New)'}
+                {t('forms.assets.title')} {existingAssetId ? (isEditMode ? t('forms.assets.editing') : t('forms.assets.viewing')) : t('forms.assets.new')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {isEditMode 
                   ? existingAssetId 
-                    ? 'Update your asset portfolio information.' 
-                    : 'Document your assets to build a complete financial profile.'
-                  : 'View your asset portfolio information.'
+                    ? t('forms.assets.updateInfo')
+                    : t('forms.assets.subtitle')
+                  : t('forms.assets.viewInfo')
                 }
               </p>
             </div>
             {!isEditMode && existingAssetId && (
               <Button onClick={handleEdit} variant="outline">
-                Edit
+                {t('common.edit')}
               </Button>
             )}
           </div>
@@ -177,69 +179,69 @@ export default function AssetsForm() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Real Estate Value (€)"
+                label={t('forms.assets.realEstate')}
                 name="real_estate"
                 type="number"
                 step="0.01"
                 value={formData.real_estate.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Total value of real estate properties"
+                placeholder={t('forms.assets.currentValue')}
               />
 
               <TextInput
-                label="Securities Value (€)"
+                label={t('forms.assets.securities')}
                 name="securities"
                 type="number"
                 step="0.01"
                 value={formData.securities.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Stocks, bonds, mutual funds"
+                placeholder={t('forms.assets.currentValue')}
               />
 
               <TextInput
-                label="Bank Deposits (€)"
+                label={t('forms.assets.bankDeposits')}
                 name="bank_deposits"
                 type="number"
                 step="0.01"
                 value={formData.bank_deposits.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Savings accounts, CDs, fixed deposits"
+                placeholder={t('forms.assets.currentValue')}
               />
 
               <TextInput
-                label="Building Savings (€)"
+                label={t('forms.assets.buildingSavings')}
                 name="building_savings"
                 type="number"
                 step="0.01"
                 value={formData.building_savings.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Bausparen and building society savings"
+                placeholder={t('forms.assets.currentValue')}
               />
 
               <TextInput
-                label="Insurance Values (€)"
+                label={t('forms.assets.insuranceValues')}
                 name="insurance_values"
                 type="number"
                 step="0.01"
                 value={formData.insurance_values.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Life insurance cash value, annuities"
+                placeholder={t('forms.assets.currentValue')}
               />
 
               <TextInput
-                label="Other Assets (€)"
+                label={t('forms.assets.otherAssets')}
                 name="other_assets"
                 type="number"
                 step="0.01"
                 value={formData.other_assets.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Art, jewelry, collectibles, vehicles"
+                placeholder={t('forms.assets.currentValue')}
               />
             </div>
           </div>
@@ -252,7 +254,7 @@ export default function AssetsForm() {
               onClick={handleCancel}
               className="px-4 py-2"
             >
-              {existingAssetId && !isEditMode ? 'Back' : 'Cancel'}
+              {existingAssetId && !isEditMode ? t('common.back') : t('common.cancel')}
             </Button>
 
             {isEditMode && (
@@ -263,7 +265,7 @@ export default function AssetsForm() {
                   size="sm"
                   className="px-4 py-2"
                 >
-                  {existingAssetId ? 'Update' : 'Save'}
+                  {existingAssetId ? t('common.update') : t('common.save')}
                 </Button>
                 
                 {user?.role === 'CLIENT' && (
@@ -274,7 +276,7 @@ export default function AssetsForm() {
                     size="sm"
                     className="px-4 py-2"
                   >
-                    Save & Continue
+                    {t('placeholders.saveContinue')}
                   </Button>
                 )}
               </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -19,6 +20,7 @@ interface ClientProgress {
 export default function ClientDashboard() {
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const [progress, setProgress] = useState<ClientProgress | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -212,62 +214,55 @@ export default function ClientDashboard() {
   }, [user?.id]);
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Loading your profile..." />;
+    return <LoadingSpinner fullScreen text={t('common.loading')} />;
   }
 
   const completedCount = progress ? Object.values(progress).filter(Boolean).length : 0;
-  const totalForms = 6;
+  const totalForms = 7; // Total number of form sections
   const completionPercentage = Math.round((completedCount / totalForms) * 100);
 
   const formSections = [
     {
-      title: 'Personal Details',
-      description: 'Basic personal and contact information',
-      path: '/dashboard/forms/personal-details',
-      icon: '👤',
+      title: t('dashboard.client.personalInfo'),
       completed: progress?.personalDetails || false,
+      link: '/dashboard/forms/personal-details',
+      icon: '👤',
     },
     {
-      title: 'Family Details',
-      description: 'Family information and relationships',
-      path: '/dashboard/forms/family-details',
-      icon: '👪',
+      title: t('dashboard.client.familyInfo'),
       completed: progress?.familyDetails || false,
+      link: '/dashboard/forms/family-details',
+      icon: '👨‍👩‍👧‍👦',
     },
     {
-      title: 'Employment',
-      description: 'Job information and employment history',
-      path: '/dashboard/forms/employment',
-      icon: '💼',
+      title: t('dashboard.client.employmentDetails'),
       completed: progress?.employment || false,
+      link: '/dashboard/forms/employment',
+      icon: '💼',
     },
     {
-      title: 'Income',
-      description: 'Salary, bonuses, and other income sources',
-      path: '/dashboard/forms/income',
-      icon: '💰',
+      title: t('dashboard.client.incomeDetails'),
       completed: progress?.income || false,
+      link: '/dashboard/forms/income',
+      icon: '💰',
     },
     {
-      title: 'Expenses',
-      description: 'Monthly expenses and recurring costs',
-      path: '/dashboard/forms/expenses',
-      icon: '💳',
+      title: t('dashboard.client.monthlyExpenses'),
       completed: progress?.expenses || false,
+      link: '/dashboard/forms/expenses',
+      icon: '📊',
     },
     {
-      title: 'Assets',
-      description: 'Properties, investments, and valuables',
-      path: '/dashboard/forms/assets',
-      icon: '🏠',
+      title: t('dashboard.client.assetsInvestments'),
       completed: progress?.assets || false,
+      link: '/dashboard/forms/assets',
+      icon: '🏦',
     },
     {
-      title: 'Liabilities',
-      description: 'Loans, credit cards, and debt obligations',
-      path: '/dashboard/forms/liabilities',
-      icon: '📄',
+      title: t('dashboard.client.debtsLiabilities'),
       completed: progress?.liabilities || false,
+      link: '/dashboard/forms/liabilities',
+      icon: '📋',
     },
   ];
 
@@ -277,10 +272,10 @@ export default function ClientDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            My Financial Profile
+            {t('dashboard.client.title')}
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Welcome, {user?.first_name}! Complete your financial profile to get personalized coaching.
+            {t('dashboard.client.welcome', { name: user?.first_name || 'Client' })}
           </p>
         </div>
       </div>
@@ -289,7 +284,7 @@ export default function ClientDashboard() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Profile Completion
+            {t('dashboard.client.profileCompletion')}
           </h2>
           <span className="text-2xl font-bold" style={{ color: colors.primary }}>
             {completionPercentage}%
@@ -308,7 +303,7 @@ export default function ClientDashboard() {
         
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {completedCount} of {totalForms} sections completed. 
-          {completedCount < totalForms && ' Complete all sections to unlock personalized insights.'}
+          {completedCount < totalForms && ` ${t('dashboard.client.completeProfileDesc')}`}
         </p>
       </div>
 
@@ -317,7 +312,7 @@ export default function ClientDashboard() {
         {formSections.map((section, index) => (
           <Link
             key={index}
-            to={section.path}
+            to={section.link}
             className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 relative"
           >
             {section.completed && (
@@ -341,17 +336,14 @@ export default function ClientDashboard() {
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
                   {section.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  {section.description}
-                </p>
                 <div className="flex items-center space-x-2">
                   {section.completed ? (
                     <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      Completed
+                      {t('common.completed')}
                     </span>
                   ) : (
                     <span className="text-sm font-medium" style={{ color: colors.primary }}>
-                      Get Started
+                      {t('common.getStarted')}
                     </span>
                   )}
                   <svg 
@@ -373,26 +365,26 @@ export default function ClientDashboard() {
       {/* Next Steps */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Next Steps
+          {t('dashboard.client.nextSteps')}
         </h2>
         
         {completionPercentage < 100 ? (
           <div className="space-y-3">
             <p className="text-gray-600 dark:text-gray-400">
-              Complete the remaining sections to unlock:
+              {t('dashboard.client.completeRemaining')}
             </p>
             <ul className="space-y-2">
               <li className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>Personalized financial analysis</span>
+                <span>{t('dashboard.client.unlockPersonalAnalysis')}</span>
               </li>
               <li className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>Customized coaching recommendations</span>
+                <span>{t('dashboard.client.unlockCustomizedCoaching')}</span>
               </li>
               <li className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                <span>Goal tracking and progress reports</span>
+                <span>{t('dashboard.client.unlockGoalTracking')}</span>
               </li>
             </ul>
             
@@ -401,8 +393,8 @@ export default function ClientDashboard() {
               {(() => {
                 const nextSection = formSections.find(section => !section.completed);
                 return nextSection ? (
-                  <Link to={nextSection.path}>
-                    <Button>Continue with {nextSection.title}</Button>
+                  <Link to={nextSection.link}>
+                    <Button>{t('dashboard.client.continueWith', { section: nextSection.title })}</Button>
                   </Link>
                 ) : null;
               })()}
@@ -412,13 +404,13 @@ export default function ClientDashboard() {
           <div className="text-center py-6">
             <div className="text-4xl mb-4">🎉</div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Profile Complete!
+              {t('dashboard.client.profileComplete')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              You've completed all sections. Your coach will review your information and provide personalized recommendations.
+              {t('dashboard.client.completeProfileMessage')}
             </p>
             <Button variant="outline">
-              View Financial Summary
+              {t('dashboard.client.viewFinancialSummary')}
             </Button>
           </div>
         )}

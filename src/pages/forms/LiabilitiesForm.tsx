@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
@@ -10,6 +11,7 @@ import type { Liability, LoanType } from '../../types';
 export default function LiabilitiesForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { personalId } = useParams();
   const [searchParams] = useSearchParams();
@@ -79,7 +81,7 @@ export default function LiabilitiesForm() {
 
   const addLiability = async () => {
     if (!formData.loan_type || !formData.loan_bank) {
-      showError('Missing Information', 'Please fill in loan type and bank before adding.');
+      showError(t('forms.liabilities.missingInfo'), 'Please fill in loan type and bank before adding.');
       return;
     }
 
@@ -89,7 +91,7 @@ export default function LiabilitiesForm() {
       const userIdToUse = personalId || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
       
       if (!userIdToUse) {
-        showError('Missing Information', 'Unable to determine user ID for liability record.');
+        showError(t('notifications.error'), 'Unable to determine user ID for liability record.');
         return;
       }
 
@@ -111,9 +113,9 @@ export default function LiabilitiesForm() {
         loan_interest: 0,
       });
       
-      showSuccess('Liability Added', 'The liability has been added successfully.');
+      showSuccess(t('forms.liabilities.liabilitiesSaved'), t('forms.liabilities.liabilitiesSavedMessage'));
     } catch (error) {
-      showError('Add Failed', error instanceof Error ? error.message : 'Failed to add liability');
+      showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to add liability');
     } finally {
       setLoading(false);
     }
@@ -124,9 +126,9 @@ export default function LiabilitiesForm() {
     try {
       await formService.deleteLiability(liabilityId);
       setLiabilities(prev => prev.filter(l => l.liability_id !== liabilityId));
-      showSuccess('Liability Removed', 'The liability has been removed successfully.');
+      showSuccess(t('forms.liabilities.liabilitiesUpdated'), t('forms.liabilities.liabilitiesUpdatedMessage'));
     } catch (error) {
-      showError('Remove Failed', error instanceof Error ? error.message : 'Failed to remove liability');
+      showError(t('notifications.deleteFailed'), error instanceof Error ? error.message : 'Failed to remove liability');
     } finally {
       setLoading(false);
     }
@@ -136,11 +138,11 @@ export default function LiabilitiesForm() {
     e.preventDefault();
     
     if (liabilities.length === 0) {
-      showError('No Liabilities', 'Please add at least one liability or skip this step.');
+      showError(t('notifications.error'), 'Please add at least one liability or skip this step.');
       return;
     }
 
-    showSuccess('Liabilities Saved', 'Your liability information has been saved successfully.');
+    showSuccess(t('forms.liabilities.liabilitiesSaved'), t('forms.liabilities.liabilitiesSavedMessage'));
     setIsEditMode(false); // Return to read-only mode
     
     // Navigate based on user role
@@ -150,7 +152,7 @@ export default function LiabilitiesForm() {
   };
 
   const handleSkip = () => {
-    showSuccess('Step Completed', 'You can add liabilities later if needed.');
+    showSuccess(t('notifications.success'), 'You can add liabilities later if needed.');
     setIsEditMode(false);
     
     if (user?.role === 'CLIENT') {
@@ -164,7 +166,7 @@ export default function LiabilitiesForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading liability details...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
           </div>
         </div>
       </div>
@@ -178,20 +180,20 @@ export default function LiabilitiesForm() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Liabilities & Loans {liabilities.length > 0 ? (isEditMode ? '(Editing)' : '(View)') : '(New)'}
+                {t('forms.liabilities.title')} {liabilities.length > 0 ? (isEditMode ? t('forms.liabilities.editing') : t('forms.liabilities.viewing')) : t('forms.liabilities.new')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {isEditMode 
                   ? liabilities.length > 0 
-                    ? 'Manage your existing liabilities and loans.' 
-                    : 'Add information about your loans and debts for a complete financial picture.'
-                  : 'View your current liabilities and loans.'
+                    ? t('forms.liabilities.updateInfo')
+                    : t('forms.liabilities.subtitle')
+                  : t('forms.liabilities.viewInfo')
                 }
               </p>
             </div>
             {!isEditMode && liabilities.length > 0 && (
               <Button onClick={handleEdit} variant="outline">
-                Edit
+                {t('common.edit')}
               </Button>
             )}
           </div>
@@ -235,7 +237,7 @@ export default function LiabilitiesForm() {
                           onClick={() => removeLiability(liability.liability_id)}
                           className="ml-4 text-red-600 hover:text-red-800"
                         >
-                          Remove
+                          {t('common.delete')}
                         </Button>
                       )}
                     </div>
@@ -255,7 +257,7 @@ export default function LiabilitiesForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Loan Type <span className="text-red-500">*</span>
+                      {t('forms.liabilities.loanType')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="loan_type"
@@ -264,52 +266,52 @@ export default function LiabilitiesForm() {
                       required
                       className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="PersonalLoan">Personal Loan</option>
-                      <option value="HomeLoan">Home Loan</option>
-                      <option value="CarLoan">Car Loan</option>
-                      <option value="BusinessLoan">Business Loan</option>
-                      <option value="EducationLoan">Education Loan</option>
-                      <option value="OtherLoan">Other Loan</option>
+                      <option value="PersonalLoan">{t('forms.liabilities.personalLoan')}</option>
+                      <option value="HomeLoan">{t('forms.liabilities.homeLoan')}</option>
+                      <option value="CarLoan">{t('forms.liabilities.carLoan')}</option>
+                      <option value="BusinessLoan">{t('forms.liabilities.businessLoan')}</option>
+                      <option value="EducationLoan">{t('forms.liabilities.educationLoan')}</option>
+                      <option value="OtherLoan">{t('forms.liabilities.otherLoan')}</option>
                     </select>
                   </div>
 
                   <TextInput
-                    label="Bank/Lender"
+                    label={t('forms.liabilities.loanBank')}
                     name="loan_bank"
                     value={formData.loan_bank}
                     onChange={handleInputChange}
                     required
-                    placeholder="Name of the lending institution"
+                    placeholder={t('forms.liabilities.loanBank')}
                   />
 
                   <TextInput
-                    label="Loan Amount (€)"
+                    label={t('forms.liabilities.amount')}
                     name="loan_amount"
                     type="number"
                     step="0.01"
                     value={formData.loan_amount.toString()}
                     onChange={handleInputChange}
-                    placeholder="Total loan amount"
+                    placeholder={t('forms.liabilities.amount')}
                   />
 
                   <TextInput
-                    label="Monthly Payment (€)"
+                    label={t('forms.liabilities.monthlyPayment')}
                     name="loan_monthly_rate"
                     type="number"
                     step="0.01"
                     value={formData.loan_monthly_rate.toString()}
                     onChange={handleInputChange}
-                    placeholder="Monthly payment amount"
+                    placeholder={t('forms.liabilities.monthlyPayment')}
                   />
 
                   <TextInput
-                    label="Interest Rate (%)"
+                    label={t('forms.liabilities.interestRate')}
                     name="loan_interest"
                     type="number"
                     step="0.01"
                     value={formData.loan_interest.toString()}
                     onChange={handleInputChange}
-                    placeholder="Annual interest rate"
+                    placeholder={t('forms.liabilities.interestRate')}
                   />
                 </div>
 
@@ -321,7 +323,7 @@ export default function LiabilitiesForm() {
                     size="sm"
                     className="px-4 py-2"
                   >
-                    Add Liability
+                    {t('common.add')}
                   </Button>
                 </div>
               </div>
@@ -336,7 +338,7 @@ export default function LiabilitiesForm() {
               onClick={handleCancel}
               className="px-4 py-2"
             >
-              {liabilities.length > 0 && !isEditMode ? 'Back' : 'Cancel'}
+              {liabilities.length > 0 && !isEditMode ? t('common.back') : t('common.cancel')}
             </Button>
 
             <div className="flex gap-3">
@@ -359,7 +361,7 @@ export default function LiabilitiesForm() {
                       onClick={handleSubmit}
                       className="px-4 py-2"
                     >
-                      Complete Financial Profile
+                      {t('forms.liabilities.completeForms')}
                     </Button>
                   )}
                 </>

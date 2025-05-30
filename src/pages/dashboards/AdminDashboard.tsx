@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { authService } from '../../services/authService';
 import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
@@ -23,6 +24,7 @@ interface RecentActivity {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { showInfo, showError } = useNotification();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,13 +55,13 @@ export default function AdminDashboard() {
           
           // Check each form section
           const formChecks = [
-            { service: () => formService.getPersonalDetailsById(userId), name: 'Personal Details' },
-            { service: () => formService.getFamilyMembersByUserId(userId), name: 'Family Details' },
-            { service: () => formService.getEmploymentById(userId), name: 'Employment' },
-            { service: () => formService.getIncomeById(userId), name: 'Income' },
-            { service: () => formService.getExpensesById(userId), name: 'Expenses' },
-            { service: () => formService.getAssetById(userId), name: 'Assets' },
-            { service: () => formService.getLiabilityById(userId), name: 'Liabilities' }
+            { service: () => formService.getPersonalDetailsById(userId), name: t('dashboard.client.personalInfo') },
+            { service: () => formService.getFamilyMembersByUserId(userId), name: t('dashboard.client.familyInfo') },
+            { service: () => formService.getEmploymentById(userId), name: t('dashboard.client.employmentDetails') },
+            { service: () => formService.getIncomeById(userId), name: t('dashboard.client.incomeDetails') },
+            { service: () => formService.getExpensesById(userId), name: t('dashboard.client.monthlyExpenses') },
+            { service: () => formService.getAssetById(userId), name: t('dashboard.client.assetsInvestments') },
+            { service: () => formService.getLiabilityById(userId), name: t('dashboard.client.debtsLiabilities') }
           ];
 
           for (const formCheck of formChecks) {
@@ -74,8 +76,8 @@ export default function AdminDashboard() {
                   // Since we don't have created_at in the client object, we'll skip time-based filtering for now
                   activities.push({
                     user: `${client.first_name} ${client.last_name}`,
-                    action: `completed ${formCheck.name} form`,
-                    time: 'Recently',
+                    action: t('dashboard.admin.completedForm', { formName: formCheck.name }),
+                    time: t('dashboard.admin.recently'),
                     type: 'form'
                   });
                 }
@@ -87,8 +89,8 @@ export default function AdminDashboard() {
                 // Since we don't have created_at in the client object, we'll skip time-based filtering for now
                 activities.push({
                   user: `${client.first_name} ${client.last_name}`,
-                  action: `completed ${formCheck.name} form`,
-                  time: 'Recently',
+                  action: t('dashboard.admin.completedForm', { formName: formCheck.name }),
+                  time: t('dashboard.admin.recently'),
                   type: 'form'
                 });
               }
@@ -111,11 +113,11 @@ export default function AdminDashboard() {
           
           if (daysSinceCreated <= 7) {
             activities.push({
-              user: 'Admin',
-              action: `created coach account for ${coach.first_name} ${coach.last_name}`,
-              time: daysSinceCreated === 0 ? 'Today' : 
-                    daysSinceCreated === 1 ? '1 day ago' : 
-                    `${daysSinceCreated} days ago`,
+              user: t('dashboard.admin.admin'),
+              action: t('dashboard.admin.createdCoachAccount', { coachName: `${coach.first_name} ${coach.last_name}` }),
+              time: daysSinceCreated === 0 ? t('dashboard.admin.today') : 
+                    daysSinceCreated === 1 ? t('dashboard.admin.oneDayAgo') : 
+                    t('dashboard.admin.daysAgo', { days: daysSinceCreated.toString() }),
               type: 'coach'
             });
           }
@@ -126,9 +128,9 @@ export default function AdminDashboard() {
       allClients.forEach(client => {
         // Since clients from getAllClients might not have created_at, we'll add a generic activity
         activities.push({
-          user: 'System',
-          action: `client ${client.first_name} ${client.last_name} is registered`,
-          time: 'Recently',
+          user: t('dashboard.admin.system'),
+          action: t('dashboard.admin.clientRegistered', { clientName: `${client.first_name} ${client.last_name}` }),
+          time: t('dashboard.admin.recently'),
           type: 'client'
         });
       });
@@ -146,7 +148,7 @@ export default function AdminDashboard() {
 
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      showError('Load Failed', 'Failed to load dashboard data');
+      showError(t('notifications.loadFailed'), t('notifications.loadFailed'));
       // Set empty data on error
       setStats({
         totalCoaches: 0,
@@ -160,26 +162,26 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-    return <LoadingSpinner fullScreen text="Loading dashboard..." />;
+    return <LoadingSpinner fullScreen text={t('common.loading')} />;
   }
 
   const statCards = [
     {
-      title: 'Coaches',
+      title: t('dashboard.admin.totalCoaches'),
       value: stats?.totalCoaches || 0,
       icon: '👨‍🏫',
       color: '#10B981',
       link: '/dashboard/users?role=coach',
     },
     {
-      title: 'Clients',
+      title: t('dashboard.admin.totalClients'),
       value: stats?.totalClients || 0,
       icon: '👤',
       color: '#F59E0B',
       link: '/dashboard/clients',
     },
     {
-      title: 'Forms Completed',
+      title: t('dashboard.admin.formsCompleted'),
       value: stats?.totalForms || 0,
       icon: '📋',
       color: '#8B5CF6',
@@ -189,14 +191,14 @@ export default function AdminDashboard() {
 
   const quickActions = [
     {
-      title: 'Manage Coaches',
-      description: 'View and manage all coaches in the system',
+      title: t('dashboard.admin.manageCoaches'),
+      description: t('dashboard.admin.manageCoachesDesc'),
       link: '/dashboard/coaches',
       icon: '👨‍🏫',
     },
     {
-      title: 'Client Management',
-      description: 'Overview of all clients and their coaches',
+      title: t('dashboard.admin.clientManagement'),
+      description: t('dashboard.admin.clientManagementDesc'),
       link: '/dashboard/clients',
       icon: '📊',
     },
@@ -208,20 +210,20 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Admin Dashboard
+            {t('dashboard.admin.title')}
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Welcome back, {user?.first_name}! Here's what's happening today.
+            {t('dashboard.admin.welcome', { name: user?.first_name || 'Admin' })}
           </p>
         </div>
         <Button
           onClick={() => {
             loadDashboardData();
-            showInfo('Dashboard Updated', 'Data refreshed successfully');
+            showInfo(t('dashboard.admin.refreshData'), t('dashboard.admin.refreshData'));
           }}
           variant="outline"
         >
-          Refresh Data
+          {t('dashboard.admin.refreshData')}
         </Button>
       </div>
 
@@ -257,10 +259,10 @@ export default function AdminDashboard() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Quick Actions
+            {t('dashboard.admin.quickActions')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Common administrative tasks
+            {t('dashboard.admin.quickActions')}
           </p>
         </div>
         <div className="p-6">
@@ -292,7 +294,7 @@ export default function AdminDashboard() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Recent Activity
+            {t('dashboard.admin.recentActivity')}
           </h2>
         </div>
         <div className="p-6">
@@ -300,10 +302,10 @@ export default function AdminDashboard() {
             <div className="text-center py-8">
               <div className="text-4xl mb-4">📊</div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                No Recent Activity
+                {t('dashboard.admin.noRecentActivity')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                No recent system activities to display.
+                {t('dashboard.admin.noActivityMessage')}
               </p>
             </div>
           ) : (

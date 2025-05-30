@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import { authService } from '../../services/authService';
 import { formatDateForInput, formatDateForAPI } from '../../utils/dateUtils';
@@ -12,6 +13,7 @@ import type { ApplicantType } from '../../types';
 export default function PersonalDetailsForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { id } = useParams(); // Optional ID parameter for editing
   const [searchParams] = useSearchParams();
@@ -183,10 +185,10 @@ export default function PersonalDetailsForm() {
       // Validate coach_id is set
       if (!formData.coach_id) {
         if (user?.role === 'ADMIN') {
-          showError('Coach Required', 'Please select a coach to assign this client to.');
+          showError(t('notifications.error'), 'Please select a coach to assign this client to.');
           return;
         } else if (user?.role === 'CLIENT' && !user?.coach_id) {
-          showError('Coach Assignment Missing', 'Your account is not assigned to a coach. Please contact an administrator.');
+          showError(t('notifications.error'), 'Your account is not assigned to a coach. Please contact an administrator.');
           return;
         } else if (user?.role === 'COACH') {
           // Auto-assign coach for COACH users
@@ -210,12 +212,12 @@ export default function PersonalDetailsForm() {
           : existingPersonalId;
         
         personalDetails = await formService.updatePersonalDetails(personalIdToUpdate, formDataForAPI);
-        showSuccess('Personal Details Updated', 'Your information has been updated successfully.');
+        showSuccess(t('forms.personalDetails.personalUpdated'), t('forms.personalDetails.personalUpdatedMessage'));
         setIsEditMode(false); // Return to read-only mode after successful update
       } else {
         // Create new record
         personalDetails = await formService.createPersonalDetails(formDataForAPI);
-        showSuccess('Personal Details Saved', 'Your information has been saved successfully.');
+        showSuccess(t('forms.personalDetails.personalSaved'), t('forms.personalDetails.personalSavedMessage'));
         setExistingPersonalId(personalDetails.personal_id);
         setIsEditMode(false); // Return to read-only mode after successful creation
       }
@@ -228,7 +230,7 @@ export default function PersonalDetailsForm() {
         // navigate('/dashboard');
       }
     } catch (error) {
-      showError('Save Failed', error instanceof Error ? error.message : 'Failed to save personal details');
+      showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save personal details');
     } finally {
       setLoading(false);
     }
@@ -240,7 +242,7 @@ export default function PersonalDetailsForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading personal details...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
           </div>
         </div>
       </div>
@@ -254,20 +256,20 @@ export default function PersonalDetailsForm() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Personal Details {existingPersonalId ? (isEditMode ? '(Editing)' : '(View)') : '(New)'}
+                {t('forms.personalDetails.title')} {existingPersonalId ? (isEditMode ? t('forms.personalDetails.editing') : t('forms.personalDetails.viewing')) : t('forms.personalDetails.new')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {isEditMode 
                   ? existingPersonalId 
-                    ? 'Update your personal information.' 
-                    : 'Provide your basic personal and contact information.'
-                  : 'View your personal information.'
+                    ? t('forms.personalDetails.updateInfo')
+                    : t('forms.personalDetails.subtitle')
+                  : t('forms.personalDetails.viewInfo')
                 }
               </p>
             </div>
             {!isEditMode && existingPersonalId && (
               <Button onClick={handleEdit} variant="outline">
-                Edit
+                {t('common.edit')}
               </Button>
             )}
           </div>
@@ -278,7 +280,7 @@ export default function PersonalDetailsForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Applicant Type <span className="text-red-500">*</span>
+                {t('forms.personalDetails.applicantType')} <span className="text-red-500">*</span>
               </label>
               <select
                 name="applicant_type"
@@ -288,14 +290,14 @@ export default function PersonalDetailsForm() {
                 required
                 className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
               >
-                <option value="PrimaryApplicant">Primary Applicant</option>
-                <option value="SecondaryApplicant">Secondary Applicant</option>
+                <option value="PrimaryApplicant">{t('forms.personalDetails.primaryApplicant')}</option>
+                <option value="SecondaryApplicant">{t('forms.personalDetails.secondaryApplicant')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Salutation <span className="text-red-500">*</span>
+                {t('forms.personalDetails.salutation')} <span className="text-red-500">*</span>
               </label>
               <select
                 name="salutation"
@@ -305,7 +307,7 @@ export default function PersonalDetailsForm() {
                 required
                 className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
               >
-                <option value="">Select salutation</option>
+                <option value="">{t('forms.personalDetails.selectSalutation')}</option>
                 <option value="Mr">Mr.</option>
                 <option value="Mrs">Mrs.</option>
                 <option value="Ms">Ms.</option>
@@ -315,60 +317,60 @@ export default function PersonalDetailsForm() {
             </div>
 
             <TextInput
-              label="First Name"
+              label={t('forms.personalDetails.firstName')}
               name="first_name"
               value={formData.first_name}
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your first name"
+              placeholder={t('placeholders.enterFirstName')}
             />
 
             <TextInput
-              label="Last Name"
+              label={t('forms.personalDetails.lastName')}
               name="last_name"
               value={formData.last_name}
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your last name"
+              placeholder={t('placeholders.enterLastName')}
             />
 
             <TextInput
-              label="Email Address"
+              label={t('forms.personalDetails.email')}
               name="email"
               type="email"
               value={formData.email}
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your email"
+              placeholder={t('placeholders.enterEmail')}
             />
 
             <TextInput
-              label="Phone Number"
+              label={t('forms.personalDetails.phone')}
               name="phone"
               type="tel"
               value={formData.phone}
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your phone number"
+              placeholder={t('placeholders.enterPhone')}
             />
 
             <TextInput
-              label="WhatsApp Number"
+              label={t('forms.personalDetails.whatsapp')}
               name="whatsapp"
               type="tel"
               value={formData.whatsapp}
               onChange={handleInputChange}
               disabled={!isEditMode}
-              placeholder="Enter your WhatsApp number"
+              placeholder={t('placeholders.enterWhatsApp')}
             />
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Marital Status <span className="text-red-500">*</span>
+                {t('forms.personalDetails.maritalStatus')} <span className="text-red-500">*</span>
               </label>
               <select
                 name="marital_status"
@@ -378,12 +380,12 @@ export default function PersonalDetailsForm() {
                 required
                 className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
               >
-                <option value="">Select marital status</option>
-                <option value="single">Single</option>
-                <option value="married">Married</option>
-                <option value="divorced">Divorced</option>
-                <option value="widowed">Widowed</option>
-                <option value="separated">Separated</option>
+                <option value="">{t('forms.personalDetails.selectMaritalStatus')}</option>
+                <option value="single">{t('forms.personalDetails.single')}</option>
+                <option value="married">{t('forms.personalDetails.married')}</option>
+                <option value="divorced">{t('forms.personalDetails.divorced')}</option>
+                <option value="widowed">{t('forms.personalDetails.widowed')}</option>
+                <option value="separated">{t('forms.personalDetails.separated')}</option>
               </select>
             </div>
           </div>
@@ -392,12 +394,12 @@ export default function PersonalDetailsForm() {
           {user?.role === 'ADMIN' && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Coach Assignment
+                {t('forms.personalDetails.coachAssignment')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Assigned Coach <span className="text-red-500">*</span>
+                    {t('forms.personalDetails.assignedCoach')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="coach_id"
@@ -407,7 +409,7 @@ export default function PersonalDetailsForm() {
                     required
                     className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
                   >
-                    <option value="">Select a coach</option>
+                    <option value="">{t('forms.personalDetails.selectCoach')}</option>
                     {availableCoaches.map((coach) => (
                       <option key={coach.personal_id} value={coach.personal_id}>
                         {coach.first_name} {coach.last_name}
@@ -427,52 +429,52 @@ export default function PersonalDetailsForm() {
           {/* Address Information */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Address Information
+              {t('forms.personalDetails.addressInfo')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Street"
+                label={t('forms.personalDetails.street')}
                 name="street"
                 value={formData.street}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
                 required
-                placeholder="Enter your street name"
+                placeholder={t('placeholders.enterStreet')}
               />
 
               <TextInput
-                label="House Number"
+                label={t('forms.personalDetails.houseNumber')}
                 name="house_number"
                 value={formData.house_number}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
                 required
-                placeholder="Enter your house number"
+                placeholder={t('placeholders.enterHouseNumber')}
               />
 
               <TextInput
-                label="Postal Code"
+                label={t('forms.personalDetails.postalCode')}
                 name="postal_code"
                 value={formData.postal_code}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
                 required
-                placeholder="Enter your postal code"
+                placeholder={t('placeholders.enterPostalCode')}
               />
 
               <TextInput
-                label="City"
+                label={t('forms.personalDetails.city')}
                 name="city"
                 value={formData.city}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
                 required
-                placeholder="Enter your city"
+                placeholder={t('placeholders.enterCity')}
               />
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Housing Situation <span className="text-red-500">*</span>
+                  {t('forms.personalDetails.housingSituation')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="housing"
@@ -482,11 +484,11 @@ export default function PersonalDetailsForm() {
                   required
                   className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
                 >
-                  <option value="">Select housing situation</option>
-                  <option value="Owner">Owner</option>
-                  <option value="Renter">Renter</option>
-                  <option value="Living with family">Living with family</option>
-                  <option value="Other">Other</option>
+                  <option value="">{t('forms.personalDetails.selectHousingSituation')}</option>
+                  <option value="Owner">{t('forms.personalDetails.owner')}</option>
+                  <option value="Renter">{t('forms.personalDetails.renter')}</option>
+                  <option value="Living with family">{t('forms.personalDetails.livingWithFamily')}</option>
+                  <option value="Other">{t('forms.personalDetails.other')}</option>
                 </select>
               </div>
             </div>

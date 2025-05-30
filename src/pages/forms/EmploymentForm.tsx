@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import { formatDateForInput, formatDateForAPI } from '../../utils/dateUtils';
 import Button from '../../components/ui/Button';
@@ -11,6 +12,7 @@ import type { EmploymentType } from '../../types';
 export default function EmploymentForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -110,12 +112,12 @@ export default function EmploymentForm() {
       if (existingEmploymentId) {
         // Update existing record
         employmentDetails = await formService.updateEmployment(existingEmploymentId, formDataForAPI);
-        showSuccess('Employment Details Updated', 'Your employment information has been updated successfully.');
+        showSuccess(t('forms.employment.employmentUpdated'), t('forms.employment.employmentUpdatedMessage'));
         setIsEditMode(false); // Return to read-only mode
       } else {
         // Create new record
         employmentDetails = await formService.createEmployment(formDataForAPI);
-        showSuccess('Employment Details Saved', 'Your employment information has been saved successfully.');
+        showSuccess(t('forms.employment.employmentSaved'), t('forms.employment.employmentSavedMessage'));
         setExistingEmploymentId(employmentDetails.employment_id);
         setIsEditMode(false); // Return to read-only mode
       }
@@ -125,7 +127,7 @@ export default function EmploymentForm() {
         navigate(`/dashboard/forms/income?personal_id=${userIdToUse}`);
       }
     } catch (error) {
-      showError('Save Failed', error instanceof Error ? error.message : 'Failed to save employment details');
+      showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save employment details');
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,7 @@ export default function EmploymentForm() {
         <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
           <div className="p-8 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading employment details...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
           </div>
         </div>
       </div>
@@ -151,20 +153,20 @@ export default function EmploymentForm() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Employment Details {existingEmploymentId ? (isEditMode ? '(Editing)' : '(View)') : '(New)'}
+                {t('forms.employment.title')} {existingEmploymentId ? (isEditMode ? t('forms.employment.editing') : t('forms.employment.viewing')) : t('forms.employment.new')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {isEditMode 
                   ? existingEmploymentId 
-                    ? 'Update your employment information.' 
-                    : 'Provide your employment details and work history.'
-                  : 'View your employment information.'
+                    ? t('forms.employment.updateInfo')
+                    : t('forms.employment.subtitle')
+                  : t('forms.employment.viewInfo')
                 }
               </p>
             </div>
             {!isEditMode && existingEmploymentId && (
               <Button onClick={handleEdit} variant="outline">
-                Edit
+                {t('common.edit')}
               </Button>
             )}
           </div>
@@ -175,7 +177,7 @@ export default function EmploymentForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Employment Type <span className="text-red-500">*</span>
+                {t('forms.employment.employmentType')} <span className="text-red-500">*</span>
               </label>
               <select
                 name="employment_type"
@@ -185,41 +187,41 @@ export default function EmploymentForm() {
                 required
                 className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
               >
-                <option value="PrimaryEmployment">Primary Employment</option>
-                <option value="SecondaryEmployment">Secondary Employment</option>
+                <option value="PrimaryEmployment">{t('forms.employment.primaryEmployment')}</option>
+                <option value="SecondaryEmployment">{t('forms.employment.secondaryEmployment')}</option>
               </select>
             </div>
 
             <TextInput
-              label="Occupation"
+              label={t('forms.employment.occupation')}
               name="occupation"
               value={formData.occupation}
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your job title/occupation"
+              placeholder={t('placeholders.enterJobTitleOccupation')}
             />
           </div>
 
           {/* Job Details */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Job Details
+              {t('forms.employment.jobDetails')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Employer Name"
+                label={t('forms.employment.employerName')}
                 name="employer_name"
                 value={formData.employer_name}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
                 required
-                placeholder="Enter your employer's name"
+                placeholder={t('placeholders.enterEmployersName')}
               />
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Contract Type <span className="text-red-500">*</span>
+                  {t('forms.employment.contractType')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="contract_type"
@@ -229,27 +231,27 @@ export default function EmploymentForm() {
                   required
                   className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
                 >
-                  <option value="">Select contract type</option>
-                  <option value="Permanent">Permanent</option>
-                  <option value="Temporary">Temporary</option>
-                  <option value="Fixed-term">Fixed-term</option>
-                  <option value="Freelance">Freelance</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Full-time">Full-time</option>
+                  <option value="">{t('forms.employment.selectContractType')}</option>
+                  <option value="Permanent">{t('forms.employment.permanent')}</option>
+                  <option value="Temporary">{t('forms.employment.temporary')}</option>
+                  <option value="Fixed-term">{t('forms.employment.fixedTerm')}</option>
+                  <option value="Freelance">{t('forms.employment.freelance')}</option>
+                  <option value="Part-time">{t('forms.employment.partTime')}</option>
+                  <option value="Full-time">{t('forms.employment.fullTime')}</option>
                 </select>
               </div>
 
               <TextInput
-                label="Contract Duration"
+                label={t('forms.employment.contractDuration')}
                 name="contract_duration"
                 value={formData.contract_duration}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="e.g., 2 years, Indefinite, etc."
+                placeholder={t('placeholders.enterContractDuration')}
               />
 
               <TextInput
-                label="Employed Since"
+                label={t('forms.employment.employedSince')}
                 name="employed_since"
                 type="date"
                 value={formData.employed_since}
@@ -268,7 +270,7 @@ export default function EmploymentForm() {
               onClick={handleCancel}
               className="px-4 py-2"
             >
-              {existingEmploymentId && !isEditMode ? 'Back' : 'Cancel'}
+              {existingEmploymentId && !isEditMode ? t('common.back') : t('common.cancel')}
             </Button>
 
             {isEditMode && (
@@ -279,7 +281,7 @@ export default function EmploymentForm() {
                   size="sm"
                   className="px-4 py-2"
                 >
-                  {existingEmploymentId ? 'Update' : 'Save'}
+                  {existingEmploymentId ? t('common.update') : t('common.save')}
                 </Button>
                 
                 {user?.role === 'CLIENT' && (
@@ -293,7 +295,7 @@ export default function EmploymentForm() {
                       // This will trigger form submission and then navigate to next form
                     }}
                   >
-                    Save & Continue
+                    {t('placeholders.saveContinue')}
                   </Button>
                 )}
               </div>

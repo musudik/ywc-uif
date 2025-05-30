@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
@@ -9,6 +10,7 @@ import TextInput from '../../components/ui/TextInput';
 export default function ExpensesForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { personalId } = useParams();
   const [searchParams] = useSearchParams();
@@ -100,7 +102,7 @@ export default function ExpensesForm() {
       const userIdToUse = personalId || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
       
       if (!userIdToUse) {
-        showError('Missing Information', 'Unable to determine user ID for expenses record.');
+        showError(t('notifications.error'), 'Unable to determine user ID for expenses record.');
         return;
       }
 
@@ -115,12 +117,12 @@ export default function ExpensesForm() {
       if (existingExpensesId) {
         // Update existing record
         expensesDetails = await formService.updateExpenses(existingExpensesId, formDataForAPI);
-        showSuccess('Expenses Details Updated', 'Your expense information has been updated successfully.');
+        showSuccess(t('forms.expenses.expensesUpdated'), t('forms.expenses.expensesUpdatedMessage'));
         setIsEditMode(false); // Return to read-only mode
       } else {
         // Create new record
         expensesDetails = await formService.createExpenses(formDataForAPI);
-        showSuccess('Expenses Details Saved', 'Your expense information has been saved successfully.');
+        showSuccess(t('forms.expenses.expensesSaved'), t('forms.expenses.expensesSavedMessage'));
         setExistingExpensesId(expensesDetails.expenses_id);
         setIsEditMode(false); // Return to read-only mode
       }
@@ -130,7 +132,7 @@ export default function ExpensesForm() {
         navigate(`/dashboard/forms/assets?personal_id=${userIdToUse}`);
       }
     } catch (error) {
-      showError('Save Failed', error instanceof Error ? error.message : 'Failed to save expenses details');
+      showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save expenses details');
     } finally {
       setLoading(false);
     }
@@ -142,7 +144,7 @@ export default function ExpensesForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading expenses details...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
           </div>
         </div>
       </div>
@@ -156,20 +158,20 @@ export default function ExpensesForm() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Monthly Expenses {existingExpensesId ? (isEditMode ? '(Editing)' : '(View)') : '(New)'}
+                {t('forms.expenses.title')} {existingExpensesId ? (isEditMode ? t('forms.expenses.editing') : t('forms.expenses.viewing')) : t('forms.expenses.new')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {isEditMode 
                   ? existingExpensesId 
-                    ? 'Update your monthly expense information.' 
-                    : 'Track your regular monthly expenses for budgeting and financial planning.'
-                  : 'View your monthly expense information.'
+                    ? t('forms.expenses.updateInfo')
+                    : t('forms.expenses.subtitle')
+                  : t('forms.expenses.viewInfo')
                 }
               </p>
             </div>
             {!isEditMode && existingExpensesId && (
               <Button onClick={handleEdit} variant="outline">
-                Edit
+                {t('common.edit')}
               </Button>
             )}
           </div>
@@ -183,47 +185,47 @@ export default function ExpensesForm() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Cold Rent (€/month)"
+                label={t('forms.expenses.coldRent')}
                 name="cold_rent"
                 type="number"
                 step="0.01"
                 value={formData.cold_rent.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Base rent without utilities"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
 
               <TextInput
-                label="Electricity (€/month)"
+                label={t('forms.expenses.electricity')}
                 name="electricity"
                 type="number"
                 step="0.01"
                 value={formData.electricity.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Monthly electricity costs"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
 
               <TextInput
-                label="Gas (€/month)"
+                label={t('forms.expenses.gas')}
                 name="gas"
                 type="number"
                 step="0.01"
                 value={formData.gas.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Monthly gas costs"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
 
               <TextInput
-                label="Telecommunication (€/month)"
+                label={t('forms.expenses.telecommunication')}
                 name="telecommunication"
                 type="number"
                 step="0.01"
                 value={formData.telecommunication.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Phone, internet, TV"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
             </div>
           </div>
@@ -235,25 +237,25 @@ export default function ExpensesForm() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Living Expenses (€/month)"
+                label={t('forms.expenses.livingExpenses')}
                 name="living_expenses"
                 type="number"
                 step="0.01"
                 value={formData.living_expenses.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Food, clothing, personal care"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
 
               <TextInput
-                label="Subscriptions (€/month)"
+                label={t('forms.expenses.subscriptions')}
                 name="subscriptions"
                 type="number"
                 step="0.01"
                 value={formData.subscriptions.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Netflix, Spotify, gym, etc."
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
             </div>
           </div>
@@ -265,36 +267,36 @@ export default function ExpensesForm() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Account Maintenance Fee (€/month)"
+                label={t('forms.expenses.accountMaintenanceFee')}
                 name="account_maintenance_fee"
                 type="number"
                 step="0.01"
                 value={formData.account_maintenance_fee.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Bank account fees"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
 
               <TextInput
-                label="Alimony (€/month)"
+                label={t('forms.expenses.alimony')}
                 name="alimony"
                 type="number"
                 step="0.01"
                 value={formData.alimony.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Alimony or child support payments"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
 
               <TextInput
-                label="Other Expenses (€/month)"
+                label={t('forms.expenses.otherExpenses')}
                 name="other_expenses"
                 type="number"
                 step="0.01"
                 value={formData.other_expenses.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Any other regular monthly expenses"
+                placeholder={t('forms.expenses.monthlyAmount')}
               />
             </div>
           </div>
@@ -307,7 +309,7 @@ export default function ExpensesForm() {
               onClick={handleCancel}
               className="px-4 py-2"
             >
-              {existingExpensesId && !isEditMode ? 'Back' : 'Cancel'}
+              {existingExpensesId && !isEditMode ? t('common.back') : t('common.cancel')}
             </Button>
 
             {isEditMode && (
@@ -318,7 +320,7 @@ export default function ExpensesForm() {
                   size="sm"
                   className="px-4 py-2"
                 >
-                  {existingExpensesId ? 'Update' : 'Save'}
+                  {existingExpensesId ? t('common.update') : t('common.save')}
                 </Button>
                 
                 {user?.role === 'CLIENT' && (
@@ -329,7 +331,7 @@ export default function ExpensesForm() {
                     size="sm"
                     className="px-4 py-2"
                   >
-                    Save & Continue
+                    {t('placeholders.saveContinue')}
                   </Button>
                 )}
               </div>

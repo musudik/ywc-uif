@@ -289,4 +289,152 @@ export interface FamilyMember {
   tax_id?: string;
   created_at: Date;
   updated_at: Date;
-} 
+}
+
+// =====================
+// FORM CONFIGURATION TYPES
+// =====================
+
+export type FieldType = 'text' | 'email' | 'tel' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea';
+
+export interface FormField {
+  id: string;
+  name: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+    message?: string;
+  };
+}
+
+export interface Section {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  fields: FormField[];
+  required: boolean;
+  collapsible: boolean;
+}
+
+// Predefined section configurations based on existing forms
+export const SECTION_DEFINITIONS: Record<string, Omit<Section, 'id' | 'order' | 'collapsible'>> = {
+  personal: {
+    title: 'Personal Details',
+    description: 'Basic personal and contact information',
+    required: true,
+    fields: [
+      { id: 'coach_id', name: 'coach_id', type: 'text', required: true, label: 'Coach ID' },
+      { id: 'applicant_type', name: 'applicant_type', type: 'select', required: true, label: 'Applicant Type', options: ['PrimaryApplicant', 'SecondaryApplicant'] },
+      { id: 'salutation', name: 'salutation', type: 'text', required: false, label: 'Salutation' },
+      { id: 'first_name', name: 'first_name', type: 'text', required: true, label: 'First Name' },
+      { id: 'last_name', name: 'last_name', type: 'text', required: true, label: 'Last Name' },
+      { id: 'street', name: 'street', type: 'text', required: true, label: 'Street' },
+      { id: 'house_number', name: 'house_number', type: 'text', required: true, label: 'House Number' },
+      { id: 'postal_code', name: 'postal_code', type: 'text', required: true, label: 'Postal Code' },
+      { id: 'city', name: 'city', type: 'text', required: true, label: 'City' },
+      { id: 'email', name: 'email', type: 'email', required: true, label: 'Email' },
+      { id: 'phone', name: 'phone', type: 'tel', required: true, label: 'Phone' },
+      { id: 'whatsapp', name: 'whatsapp', type: 'tel', required: false, label: 'WhatsApp' },
+      { id: 'marital_status', name: 'marital_status', type: 'select', required: true, label: 'Marital Status', options: ['single', 'married', 'divorced', 'widowed'] },
+      { id: 'birth_date', name: 'birth_date', type: 'date', required: true, label: 'Birth Date' },
+      { id: 'birth_place', name: 'birth_place', type: 'text', required: true, label: 'Birth Place' },
+      { id: 'nationality', name: 'nationality', type: 'text', required: true, label: 'Nationality' },
+      { id: 'residence_permit', name: 'residence_permit', type: 'text', required: false, label: 'Residence Permit' },
+      { id: 'eu_citizen', name: 'eu_citizen', type: 'checkbox', required: false, label: 'EU Citizen' },
+      { id: 'tax_id', name: 'tax_id', type: 'text', required: false, label: 'Tax ID' },
+      { id: 'iban', name: 'iban', type: 'text', required: false, label: 'IBAN' },
+      { id: 'housing', name: 'housing', type: 'select', required: true, label: 'Housing', options: ['owned', 'rented', 'livingWithParents', 'other'] }
+    ]
+  },
+  family: {
+    title: 'Family Details',
+    description: 'Information about family members',
+    required: false,
+    fields: [
+      { id: 'first_name', name: 'first_name', type: 'text', required: true, label: 'First Name' },
+      { id: 'last_name', name: 'last_name', type: 'text', required: true, label: 'Last Name' },
+      { id: 'relation', name: 'relation', type: 'select', required: true, label: 'Relation', options: ['Spouse', 'Child', 'Parent', 'Other'] },
+      { id: 'birth_date', name: 'birth_date', type: 'date', required: true, label: 'Birth Date' },
+      { id: 'nationality', name: 'nationality', type: 'text', required: true, label: 'Nationality' },
+      { id: 'tax_id', name: 'tax_id', type: 'text', required: false, label: 'Tax ID' }
+    ]
+  },
+  employment: {
+    title: 'Employment Details',
+    description: 'Current employment information',
+    required: true,
+    fields: [
+      { id: 'employment_type', name: 'employment_type', type: 'select', required: true, label: 'Employment Type', options: ['PrimaryEmployment', 'SecondaryEmployment'] },
+      { id: 'occupation', name: 'occupation', type: 'text', required: true, label: 'Occupation' },
+      { id: 'contract_type', name: 'contract_type', type: 'text', required: false, label: 'Contract Type' },
+      { id: 'contract_duration', name: 'contract_duration', type: 'text', required: false, label: 'Contract Duration' },
+      { id: 'employer_name', name: 'employer_name', type: 'text', required: false, label: 'Employer Name' },
+      { id: 'employed_since', name: 'employed_since', type: 'date', required: false, label: 'Employed Since' }
+    ]
+  },
+  income: {
+    title: 'Income Details',
+    description: 'Monthly income and benefits',
+    required: true,
+    fields: [
+      { id: 'gross_income', name: 'gross_income', type: 'number', required: true, label: 'Gross Income', validation: { min: 0 } },
+      { id: 'net_income', name: 'net_income', type: 'number', required: true, label: 'Net Income', validation: { min: 0 } },
+      { id: 'tax_class', name: 'tax_class', type: 'text', required: false, label: 'Tax Class' },
+      { id: 'tax_id', name: 'tax_id', type: 'text', required: false, label: 'Tax ID' },
+      { id: 'number_of_salaries', name: 'number_of_salaries', type: 'number', required: false, label: 'Number of Salaries', validation: { min: 12, max: 14 } },
+      { id: 'child_benefit', name: 'child_benefit', type: 'number', required: false, label: 'Child Benefit', validation: { min: 0 } },
+      { id: 'other_income', name: 'other_income', type: 'number', required: false, label: 'Other Income', validation: { min: 0 } },
+      { id: 'income_trade_business', name: 'income_trade_business', type: 'number', required: false, label: 'Income from Trade/Business', validation: { min: 0 } },
+      { id: 'income_self_employed_work', name: 'income_self_employed_work', type: 'number', required: false, label: 'Income from Self-Employed Work', validation: { min: 0 } },
+      { id: 'income_side_job', name: 'income_side_job', type: 'number', required: false, label: 'Income from Side Job', validation: { min: 0 } }
+    ]
+  },
+  expenses: {
+    title: 'Expenses Details',
+    description: 'Monthly expenses and bills',
+    required: true,
+    fields: [
+      { id: 'cold_rent', name: 'cold_rent', type: 'number', required: false, label: 'Cold Rent', validation: { min: 0 } },
+      { id: 'electricity', name: 'electricity', type: 'number', required: false, label: 'Electricity', validation: { min: 0 } },
+      { id: 'living_expenses', name: 'living_expenses', type: 'number', required: false, label: 'Living Expenses', validation: { min: 0 } },
+      { id: 'gas', name: 'gas', type: 'number', required: false, label: 'Gas', validation: { min: 0 } },
+      { id: 'telecommunication', name: 'telecommunication', type: 'number', required: false, label: 'Telecommunication', validation: { min: 0 } },
+      { id: 'account_maintenance_fee', name: 'account_maintenance_fee', type: 'number', required: false, label: 'Account Maintenance Fee', validation: { min: 0 } },
+      { id: 'alimony', name: 'alimony', type: 'number', required: false, label: 'Alimony', validation: { min: 0 } },
+      { id: 'subscriptions', name: 'subscriptions', type: 'number', required: false, label: 'Subscriptions', validation: { min: 0 } },
+      { id: 'other_expenses', name: 'other_expenses', type: 'number', required: false, label: 'Other Expenses', validation: { min: 0 } }
+    ]
+  },
+  assets: {
+    title: 'Assets',
+    description: 'Current assets and investments',
+    required: false,
+    fields: [
+      { id: 'real_estate', name: 'real_estate', type: 'number', required: false, label: 'Real Estate', validation: { min: 0 } },
+      { id: 'securities', name: 'securities', type: 'number', required: false, label: 'Securities', validation: { min: 0 } },
+      { id: 'bank_deposits', name: 'bank_deposits', type: 'number', required: false, label: 'Bank Deposits', validation: { min: 0 } },
+      { id: 'building_savings', name: 'building_savings', type: 'number', required: false, label: 'Building Savings', validation: { min: 0 } },
+      { id: 'insurance_values', name: 'insurance_values', type: 'number', required: false, label: 'Insurance Values', validation: { min: 0 } },
+      { id: 'other_assets', name: 'other_assets', type: 'number', required: false, label: 'Other Assets', validation: { min: 0 } }
+    ]
+  },
+  liabilities: {
+    title: 'Liabilities',
+    description: 'Current loans and debts',
+    required: false,
+    fields: [
+      { id: 'loan_type', name: 'loan_type', type: 'select', required: true, label: 'Loan Type', options: ['PersonalLoan', 'HomeLoan', 'CarLoan', 'BusinessLoan', 'EducationLoan', 'OtherLoan'] },
+      { id: 'loan_bank', name: 'loan_bank', type: 'text', required: false, label: 'Loan Bank' },
+      { id: 'loan_amount', name: 'loan_amount', type: 'number', required: false, label: 'Loan Amount', validation: { min: 0 } },
+      { id: 'loan_monthly_rate', name: 'loan_monthly_rate', type: 'number', required: false, label: 'Monthly Rate', validation: { min: 0 } },
+      { id: 'loan_interest', name: 'loan_interest', type: 'number', required: false, label: 'Interest Rate', validation: { min: 0, max: 100 } }
+    ]
+  }
+}; 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
@@ -19,6 +20,7 @@ interface FamilyMemberFormData {
 export default function FamilyDetailsForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { personalId } = useParams();
   const [searchParams] = useSearchParams();
@@ -41,10 +43,10 @@ export default function FamilyDetailsForm() {
   });
 
   const relationOptions = [
-    { value: 'Spouse', label: 'Spouse' },
-    { value: 'Child', label: 'Child' },
-    { value: 'Parent', label: 'Parent' },
-    { value: 'Other', label: 'Other' },
+    { value: 'Spouse', label: t('forms.familyDetails.spouse') },
+    { value: 'Child', label: t('forms.familyDetails.child') },
+    { value: 'Parent', label: t('forms.familyDetails.parent') },
+    { value: 'Other', label: t('forms.familyDetails.other') },
   ];
 
   useEffect(() => {
@@ -130,13 +132,13 @@ export default function FamilyDetailsForm() {
   };
 
   const handleDeleteMember = async (memberId: string) => {
-    if (window.confirm('Are you sure you want to delete this family member?')) {
+    if (window.confirm(t('forms.familyDetails.confirmDelete'))) {
       try {
         await formService.deleteFamilyMember(memberId);
-        showSuccess('Family Member Deleted', 'Family member has been removed successfully.');
+        showSuccess(t('forms.familyDetails.familyMemberDeleted'), t('forms.familyDetails.familyMemberDeletedMessage'));
         loadFamilyMembers(); // Reload the list
       } catch (error) {
-        showError('Delete Failed', error instanceof Error ? error.message : 'Failed to delete family member');
+        showError(t('notifications.deleteFailed'), error instanceof Error ? error.message : 'Failed to delete family member');
       }
     }
   };
@@ -149,13 +151,13 @@ export default function FamilyDetailsForm() {
       const userIdToUse = getUserId();
       
       if (!userIdToUse) {
-        showError('Missing Information', 'Unable to determine user ID for family member record.');
+        showError(t('forms.familyDetails.missingInfo'), 'Unable to determine user ID for family member record.');
         return;
       }
 
       // Validate required fields
       if (!formData.first_name || !formData.last_name || !formData.birth_date || !formData.nationality) {
-        showError('Missing Information', 'Please fill in all required fields.');
+        showError(t('forms.familyDetails.missingInfo'), t('forms.familyDetails.fillRequiredFields'));
         return;
       }
 
@@ -169,11 +171,11 @@ export default function FamilyDetailsForm() {
       if (editingMemberId) {
         // Update existing family member
         await formService.updateFamilyMember(editingMemberId, formDataForAPI);
-        showSuccess('Family Member Updated', 'Family member information has been updated successfully.');
+        showSuccess(t('forms.familyDetails.familyMemberUpdated'), t('forms.familyDetails.familyMemberUpdatedMessage'));
       } else {
         // Create new family member
         await formService.createFamilyMember(formDataForAPI);
-        showSuccess('Family Member Added', 'New family member has been added successfully.');
+        showSuccess(t('forms.familyDetails.familyMemberAdded'), t('forms.familyDetails.familyMemberAddedMessage'));
       }
       
       setShowAddForm(false);
@@ -182,7 +184,7 @@ export default function FamilyDetailsForm() {
       loadFamilyMembers(); // Reload the list
       
     } catch (error) {
-      showError('Save Failed', error instanceof Error ? error.message : 'Failed to save family member details');
+      showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save family member details');
     } finally {
       setLoading(false);
     }
@@ -204,7 +206,7 @@ export default function FamilyDetailsForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading family details...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
           </div>
         </div>
       </div>
@@ -218,18 +220,18 @@ export default function FamilyDetailsForm() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Family Details {familyMembers.length > 0 ? (isEditMode ? '(Editing)' : '(View)') : '(New)'}
+                {t('forms.familyDetails.title')} {familyMembers.length > 0 ? (isEditMode ? t('forms.familyDetails.editing') : t('forms.familyDetails.viewing')) : t('forms.familyDetails.new')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {isEditMode 
-                  ? 'Add or update family member information for your application.'
-                  : 'View your family member information.'
+                  ? t('forms.familyDetails.subtitle')
+                  : t('forms.familyDetails.viewSubtitle')
                 }
               </p>
             </div>
             {!isEditMode && familyMembers.length > 0 && (
               <Button onClick={handleEdit} variant="outline">
-                Edit
+                {t('common.edit')}
               </Button>
             )}
           </div>

@@ -2,29 +2,22 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getNavigationItems } from '../../routes';
 import { APP_CONFIG } from '../../config/constants';
 import Button from '../ui/Button';
 import YWCLogo from '../../assets/YWC.png';
 
-const languages = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', flag: '🇫🇷' },
-  { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-  { code: 'zh', name: '中文', flag: '🇨🇳' },
-];
-
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const { mode, toggleMode, colors } = useTheme();
+  const { currentLanguage, setLanguage, languages } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState(languages[0]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const languageRef = useRef<HTMLDivElement>(null);
@@ -80,10 +73,13 @@ export default function DashboardLayout() {
     setProfileDropdownOpen(false);
   };
 
-  const handleLanguageChange = (language: typeof languages[0]) => {
-    setCurrentLanguage(language);
+  const handleLanguageChange = (languageCode: string) => {
+    setLanguage(languageCode as 'en' | 'de' | 'es');
     setLanguageDropdownOpen(false);
-    // Here you would implement actual language switching logic
+  };
+
+  const getCurrentLanguageConfig = () => {
+    return languages.find(lang => lang.code === currentLanguage) || languages[0];
   };
 
   return (
@@ -109,33 +105,24 @@ export default function DashboardLayout() {
               {/* Logo Section */}
               <div className="flex items-center space-x-4 flex-shrink-0">
                 <Link to="/dashboard" className="flex items-center space-x-3 group">
-                  <div className="relative">
-                    <img 
-                      src={YWCLogo} 
-                      alt="Your Wealth Coach"
-                      className="w-10 h-10 rounded-xl shadow-lg transform group-hover:scale-105 transition-transform duration-200"
-                      style={{ 
-                        filter: mode === 'dark' ? 'brightness(1.1)' : 'brightness(1)',
-                      }}
-                    />
-                    <div 
-                      className="absolute -inset-1 rounded-xl opacity-20 blur-sm group-hover:opacity-30 transition-opacity duration-200"
-                      style={{ background: `linear-gradient(45deg, ${colors.primary}, ${colors.accent})` }}
-                    ></div>
-                  </div>
-                  <div className="hidden sm:block">
-                    <div 
-                      className="text-xl font-lexend font-bold tracking-tight"
+                  <img 
+                    src={YWCLogo} 
+                    alt="Your Wealth Coach"
+                    className="w-40 h-20 rounded-lg"
+                  />
+                  <div className="flex items-center space-x-2">
+                    <span 
+                      className="text-lg font-lexend font-bold tracking-tight"
                       style={{ color: colors.text }}
                     >
                       {APP_CONFIG.NAME}
-                    </div>
-                    <div 
-                      className="text-xs font-medium tracking-wide"
+                    </span>
+                    <span 
+                      className="text-sm font-medium tracking-wide hidden sm:block"
                       style={{ color: colors.textSecondary }}
                     >
-                      {APP_CONFIG.WEBSITE}
-                    </div>
+                      | {APP_CONFIG.WEBSITE}
+                    </span>
                   </div>
                 </Link>
               </div>
@@ -152,8 +139,8 @@ export default function DashboardLayout() {
                       color: colors.text
                     }}
                   >
-                    <span className="text-lg">{currentLanguage.flag}</span>
-                    <span className="hidden sm:block text-sm font-medium">{currentLanguage.code.toUpperCase()}</span>
+                    <span className="text-lg">{getCurrentLanguageConfig().flag}</span>
+                    <span className="hidden sm:block text-sm font-medium">{getCurrentLanguageConfig().code.toUpperCase()}</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -171,26 +158,26 @@ export default function DashboardLayout() {
                       {languages.map((language) => (
                         <button
                           key={language.code}
-                          onClick={() => handleLanguageChange(language)}
+                          onClick={() => handleLanguageChange(language.code)}
                           className="flex items-center space-x-3 w-full px-4 py-2 text-sm transition-colors duration-150"
                           style={{ 
-                            color: currentLanguage.code === language.code ? colors.primary : colors.text,
-                            backgroundColor: currentLanguage.code === language.code ? colors.primaryLight : 'transparent'
+                            color: currentLanguage === language.code ? colors.primary : colors.text,
+                            backgroundColor: currentLanguage === language.code ? colors.primaryLight : 'transparent'
                           }}
                           onMouseEnter={(e) => {
-                            if (currentLanguage.code !== language.code) {
+                            if (currentLanguage !== language.code) {
                               e.currentTarget.style.backgroundColor = colors.surfaceHover;
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (currentLanguage.code !== language.code) {
+                            if (currentLanguage !== language.code) {
                               e.currentTarget.style.backgroundColor = 'transparent';
                             }
                           }}
                         >
                           <span className="text-lg">{language.flag}</span>
                           <span className="font-medium">{language.name}</span>
-                          {currentLanguage.code === language.code && (
+                          {currentLanguage === language.code && (
                             <svg className="w-4 h-4 ml-auto" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>

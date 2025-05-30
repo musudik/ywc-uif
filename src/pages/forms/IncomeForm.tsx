@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
@@ -9,6 +10,7 @@ import TextInput from '../../components/ui/TextInput';
 export default function IncomeForm() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { personalId } = useParams();
   const [searchParams] = useSearchParams();
@@ -117,12 +119,12 @@ export default function IncomeForm() {
       if (existingIncomeId) {
         // Update existing record
         incomeDetails = await formService.updateIncome(existingIncomeId, formDataForAPI);
-        showSuccess('Income Details Updated', 'Your income information has been updated successfully.');
+        showSuccess(t('forms.income.incomeUpdated'), t('forms.income.incomeUpdatedMessage'));
         setIsEditMode(false); // Return to read-only mode
       } else {
         // Create new record
         incomeDetails = await formService.createIncome(formDataForAPI);
-        showSuccess('Income Details Saved', 'Your income information has been saved successfully.');
+        showSuccess(t('forms.income.incomeSaved'), t('forms.income.incomeSavedMessage'));
         setExistingIncomeId(incomeDetails.income_id);
         setIsEditMode(false); // Return to read-only mode
       }
@@ -132,7 +134,7 @@ export default function IncomeForm() {
         navigate(`/dashboard/forms/expenses?personal_id=${userIdToUse}`);
       }
     } catch (error) {
-      showError('Save Failed', error instanceof Error ? error.message : 'Failed to save income details');
+      showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save income details');
     } finally {
       setLoading(false);
     }
@@ -144,7 +146,7 @@ export default function IncomeForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading income details...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
           </div>
         </div>
       </div>
@@ -158,20 +160,20 @@ export default function IncomeForm() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Income Details {existingIncomeId ? (isEditMode ? '(Editing)' : '(View)') : '(New)'}
+                {t('forms.income.title')} {existingIncomeId ? (isEditMode ? t('forms.income.editing') : t('forms.income.viewing')) : t('forms.income.new')}
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {isEditMode 
                   ? existingIncomeId 
-                    ? 'Update your income information.' 
-                    : 'Provide detailed information about your income sources and tax situation.'
-                  : 'View your income information.'
+                    ? t('forms.income.updateInfo')
+                    : t('forms.income.subtitle')
+                  : t('forms.income.viewInfo')
                 }
               </p>
             </div>
             {!isEditMode && existingIncomeId && (
               <Button onClick={handleEdit} variant="outline">
-                Edit
+                {t('common.edit')}
               </Button>
             )}
           </div>
@@ -181,7 +183,7 @@ export default function IncomeForm() {
           {/* Primary Income */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TextInput
-              label="Gross Monthly Income (€)"
+              label={t('forms.income.grossIncome')}
               name="gross_income"
               type="number"
               step="0.01"
@@ -189,11 +191,11 @@ export default function IncomeForm() {
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your gross monthly income"
+              placeholder={t('forms.income.monthlyAmount')}
             />
 
             <TextInput
-              label="Net Monthly Income (€)"
+              label={t('forms.income.netIncome')}
               name="net_income"
               type="number"
               step="0.01"
@@ -201,12 +203,12 @@ export default function IncomeForm() {
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your net monthly income"
+              placeholder={t('forms.income.monthlyAmount')}
             />
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tax Class <span className="text-red-500">*</span>
+                {t('forms.income.taxClass')} <span className="text-red-500">*</span>
               </label>
               <select
                 name="tax_class"
@@ -216,7 +218,7 @@ export default function IncomeForm() {
                 required
                 className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
               >
-                <option value="">Select tax class</option>
+                <option value="">{t('forms.income.selectTaxClass')}</option>
                 <option value="1">Class 1 - Single, divorced, widowed</option>
                 <option value="2">Class 2 - Single parent with child allowance</option>
                 <option value="3">Class 3 - Married, higher income</option>
@@ -227,17 +229,17 @@ export default function IncomeForm() {
             </div>
 
             <TextInput
-              label="Tax ID"
+              label={t('forms.income.taxIdField')}
               name="tax_id"
               value={formData.tax_id}
               onChange={handleInputChange}
               disabled={!isEditMode}
               required
-              placeholder="Enter your tax identification number"
+              placeholder={t('placeholders.enterTaxId')}
             />
 
             <TextInput
-              label="Number of Salaries per Year"
+              label={t('forms.income.numberOfSalaries')}
               name="number_of_salaries"
               type="number"
               min="12"
@@ -257,58 +259,58 @@ export default function IncomeForm() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInput
-                label="Child Benefit (€/month)"
+                label={t('forms.income.childBenefit')}
                 name="child_benefit"
                 type="number"
                 step="0.01"
                 value={formData.child_benefit.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Monthly child benefit amount"
+                placeholder={t('forms.income.monthlyAmount')}
               />
 
               <TextInput
-                label="Other Income (€/month)"
+                label={t('forms.income.otherIncome')}
                 name="other_income"
                 type="number"
                 step="0.01"
                 value={formData.other_income.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Pension, rental income, etc."
+                placeholder={t('forms.income.monthlyAmount')}
               />
 
               <TextInput
-                label="Trade/Business Income (€/month)"
+                label={t('forms.income.incomeTradeBusiness')}
                 name="income_trade_business"
                 type="number"
                 step="0.01"
                 value={formData.income_trade_business.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Income from trade or business"
+                placeholder={t('forms.income.monthlyAmount')}
               />
 
               <TextInput
-                label="Self-Employed Income (€/month)"
+                label={t('forms.income.incomeSelfEmployed')}
                 name="income_self_employed_work"
                 type="number"
                 step="0.01"
                 value={formData.income_self_employed_work.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Freelance or self-employed income"
+                placeholder={t('forms.income.monthlyAmount')}
               />
 
               <TextInput
-                label="Side Job Income (€/month)"
+                label={t('forms.income.incomeSideJob')}
                 name="income_side_job"
                 type="number"
                 step="0.01"
                 value={formData.income_side_job.toString()}
                 onChange={handleInputChange}
                 disabled={!isEditMode}
-                placeholder="Income from part-time or side work"
+                placeholder={t('forms.income.monthlyAmount')}
               />
             </div>
           </div>
@@ -321,7 +323,7 @@ export default function IncomeForm() {
               onClick={handleCancel}
               className="px-4 py-2"
             >
-              {existingIncomeId && !isEditMode ? 'Back' : 'Cancel'}
+              {existingIncomeId && !isEditMode ? t('common.back') : t('common.cancel')}
             </Button>
 
             {isEditMode && (
@@ -332,7 +334,7 @@ export default function IncomeForm() {
                   size="sm"
                   className="px-4 py-2"
                 >
-                  {existingIncomeId ? 'Update' : 'Save'}
+                  {existingIncomeId ? t('common.update') : t('common.save')}
                 </Button>
                 
                 {user?.role === 'CLIENT' && (
@@ -343,7 +345,7 @@ export default function IncomeForm() {
                     size="sm"
                     className="px-4 py-2"
                   >
-                    Save & Continue
+                    {t('placeholders.saveContinue')}
                   </Button>
                 )}
               </div>

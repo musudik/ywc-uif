@@ -25,6 +25,10 @@ import ExpensesForm from '../pages/forms/ExpensesForm';
 import AssetsForm from '../pages/forms/AssetsForm';
 import LiabilitiesForm from '../pages/forms/LiabilitiesForm';
 
+// Dynamic Form Pages
+import FormsList from '../pages/client/FormsList';
+import DynamicForm from '../pages/client/DynamicForm';
+
 // Client Management (Coach/Admin)
 import ClientManagement from '../pages/clients/ClientManagement';
 import ClientProfile from '../pages/clients/ClientProfile';
@@ -36,6 +40,9 @@ import CoachManagement from '../pages/coaches/CoachManagement';
 // User Management (Admin only)
 import UserManagement from '../pages/users/UserManagement';
 import CreateUser from '../pages/users/CreateUser';
+
+// Admin Tools
+import FormConfigTool from '../pages/admin/FormConfigTool';
 
 // Error Pages
 import NotFoundPage from '../pages/errors/NotFoundPage';
@@ -87,6 +94,14 @@ export const router = createBrowserRouter([
             element: (
               <RoleGuard allowedRoles={[UserRole.ADMIN]}>
                 <AdminDashboard />
+              </RoleGuard>
+            ),
+          },
+          {
+            path: 'admin/form-config',
+            element: (
+              <RoleGuard allowedRoles={[UserRole.ADMIN]}>
+                <FormConfigTool />
               </RoleGuard>
             ),
           },
@@ -160,6 +175,32 @@ export const router = createBrowserRouter([
           {
             path: 'forms',
             children: [
+              // Dynamic Form Routes (New)
+              {
+                index: true,
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <FormsList />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'dynamic/new/:configId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DynamicForm />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'dynamic/:submissionId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DynamicForm />
+                  </RoleGuard>
+                ),
+              },
+              // Existing Form Routes
               {
                 path: 'personal-details',
                 element: (
@@ -338,17 +379,17 @@ export const getNavigationItems = (userRole: UserRole): NavigationItem[] => {
         roles: [UserRole.ADMIN],
         children: [
           {
-            id: 'forms-list',
-            label: 'Forms List',
+            id: 'available-forms',
+            label: 'Available Forms',
             path: '/dashboard/forms',
-            icon: 'list',
+            icon: 'document-text',
             roles: [UserRole.ADMIN],
           },
           {
-            id: 'form-templates',
-            label: 'Form Templates',
-            path: '/dashboard/forms/templates',
-            icon: 'document-duplicate',
+            id: 'form-config-tool',
+            label: 'Form Configuration',
+            path: '/dashboard/admin/form-config',
+            icon: 'cog',
             roles: [UserRole.ADMIN],
           },
         ],
@@ -377,6 +418,13 @@ export const getNavigationItems = (userRole: UserRole): NavigationItem[] => {
             roles: [UserRole.COACH],
           },
         ],
+      },
+      {
+        id: 'forms',
+        label: 'Forms',
+        path: '/dashboard/forms',
+        icon: 'document-text',
+        roles: [UserRole.COACH],
       },
       {
         id: 'coaching-tools',
@@ -499,6 +547,13 @@ export const getNavigationItems = (userRole: UserRole): NavigationItem[] => {
         roles: [UserRole.CLIENT],
         children: [
           {
+            id: 'available-forms',
+            label: 'Available Forms',
+            path: '/dashboard/forms',
+            icon: 'document-text',
+            roles: [UserRole.CLIENT],
+          },
+          {
             id: 'self-disclosure',
             label: 'Self Disclosure',
             path: '/dashboard/forms/self-disclosure',
@@ -524,66 +579,6 @@ export const getNavigationItems = (userRole: UserRole): NavigationItem[] => {
             label: 'Taxes',
             path: '/dashboard/forms/taxes',
             icon: 'chart-line',
-            roles: [UserRole.CLIENT],
-          },
-        ],
-      },
-      {
-        id: 'financial-overview',
-        label: 'Financial Overview',
-        path: '/dashboard/overview',
-        icon: 'chart-pie',
-        roles: [UserRole.CLIENT],
-        children: [
-          {
-            id: 'net-worth',
-            label: 'Net Worth Summary',
-            path: '/dashboard/overview/net-worth',
-            icon: 'scale',
-            roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'budget-analysis',
-            label: 'Budget Analysis',
-            path: '/dashboard/overview/budget',
-            icon: 'calculator',
-            roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'cash-flow',
-            label: 'Cash Flow',
-            path: '/dashboard/overview/cash-flow',
-            icon: 'arrow-trending-up',
-            roles: [UserRole.CLIENT],
-          },
-        ],
-      },
-      {
-        id: 'goals-planning',
-        label: 'Goals & Planning',
-        path: '/dashboard/planning',
-        icon: 'flag',
-        roles: [UserRole.CLIENT],
-        children: [
-          {
-            id: 'financial-goals',
-            label: 'Financial Goals',
-            path: '/dashboard/planning/goals',
-            icon: 'trophy',
-            roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'retirement-planning',
-            label: 'Retirement Planning',
-            path: '/dashboard/planning/retirement',
-            icon: 'home-modern',
-            roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'debt-payoff',
-            label: 'Debt Payoff Strategy',
-            path: '/dashboard/planning/debt',
-            icon: 'arrow-down-circle',
             roles: [UserRole.CLIENT],
           },
         ],
