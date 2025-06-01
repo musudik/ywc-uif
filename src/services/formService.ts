@@ -104,8 +104,8 @@ export class FormService {
     throw new Error(response.message || 'Failed to get employment details');
   }
 
-  async getEmploymentByUserId(userId: string): Promise<EmploymentDetails[]> {
-    const response = await apiService.get<EmploymentDetails[]>(`/employment/${userId}`);
+  async getEmploymentByUserId(userId: string): Promise<EmploymentDetails> {
+    const response = await apiService.get<EmploymentDetails>(`/employment/${userId}`);
     if (response.success && response.data) {
       return response.data;
     }
@@ -257,8 +257,8 @@ export class FormService {
     throw new Error(response.message || 'Failed to get asset');
   }
 
-  async getAssetsByUserId(userId: string): Promise<Asset[]> {
-    const response = await apiService.get<Asset[]>(`/assets/${userId}`);
+  async getAssetsByUserId(userId: string): Promise<Asset> {
+    const response = await apiService.get<Asset>(`/assets/${userId}`);
     if (response.success && response.data) {
       return response.data;
     }

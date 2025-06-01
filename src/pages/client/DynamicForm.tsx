@@ -1060,9 +1060,8 @@ export default function DynamicForm() {
           } else if (sectionTitle.includes('employment')) {
             try {
               // First try to get employment by user ID (which returns array)
-              const employmentList = await formService.getEmploymentByUserId(userIdToLoad);
-              if (employmentList && employmentList.length > 0) {
-                const employment = employmentList[0]; // Use the first employment record
+              const employment = await formService.getEmploymentByUserId(userIdToLoad);
+              if (employment) {
                 sectionData = {
                   occupation: employment.occupation || '',
                   contract_type: employment.contract_type || '',
@@ -1088,10 +1087,9 @@ export default function DynamicForm() {
           } else if (sectionTitle.includes('assets')) {
             try {
               // Use the correct method for getting assets by user ID
-              const assetsList = await formService.getAssetsByUserId(userIdToLoad);
-              if (assetsList && assetsList.length > 0) {
+              const asset = await formService.getAssetsByUserId(userIdToLoad);
+              if (asset) {
                 // Use the first asset record and map to the form fields
-                const asset = assetsList[0];
                 sectionData = {
                   real_estate: asset.real_estate || 0,
                   securities: asset.securities || 0,
@@ -1188,7 +1186,7 @@ export default function DynamicForm() {
       const submissionData: Omit<FormSubmissionData, 'id' | 'created_at' | 'updated_at'> = {
         form_config_id: formConfig.config_id || '',
         user_id: user.id,
-        submission_data: formData,
+        form_data: formData,
         status: asSubmitted ? 'submitted' : 'draft',
         submitted_at: asSubmitted ? new Date().toISOString() : undefined
       };

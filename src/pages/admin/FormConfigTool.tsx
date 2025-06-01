@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import type { FormField, Section } from '../../types';
 import { SECTION_DEFINITIONS } from '../../types';
+import { CONSENT_FORM_DATA } from '../../config/constants';
 import Button from '../../components/ui/Button';
 import configToolService, { 
   type FormConfigurationData, 
@@ -63,7 +64,7 @@ interface FormConfig {
   description: string;
   applicantConfig: ApplicantConfigType;
   sections: Section[];
-  consent_form: ConsentForm;
+  consent_forms: ConsentForm[];
   documents: Document[];
   is_active: boolean;
   allowedRoles: UserRole[];
@@ -115,6 +116,7 @@ export default function FormConfigTool() {
   const [error, setError] = useState<string | undefined>(undefined);
   const [success, setSuccess] = useState<string | undefined>(undefined);
   const [showPreview, setShowPreview] = useState(false);
+  const [consentFormMode, setConsentFormMode] = useState<'predefined' | 'custom'>('custom');
   const [formConfig, setFormConfig] = useState<FormConfig>({
     name: '',
     form_type: 'personal-details',
@@ -122,13 +124,7 @@ export default function FormConfigTool() {
     description: '',
     applicantConfig: 'single',
     sections: [],
-    consent_form: {
-      title: '',
-      content: '',
-      enabled: true,
-      required: true,
-      checkboxText: 'I agree to the terms and conditions'
-    },
+    consent_forms: [],
     documents: [],
     is_active: true,
     allowedRoles: [UserRole.ADMIN]
@@ -196,6 +192,7 @@ export default function FormConfigTool() {
 
   const addConsentForm = () => {
     const newConsent: ConsentForm = {
+      id: Date.now().toString(),
       title: '',
       content: '',
       enabled: true,
@@ -205,10 +202,7 @@ export default function FormConfigTool() {
     
     setFormConfig(prev => ({
       ...prev,
-      consent_form: {
-        ...prev.consent_form,
-        ...newConsent
-      }
+      consent_forms: [...prev.consent_forms, newConsent]
     }));
   };
 
@@ -258,10 +252,7 @@ export default function FormConfigTool() {
   const removeConsentForm = (consentId: string) => {
     setFormConfig(prev => ({
       ...prev,
-      consent_form: {
-        ...prev.consent_form,
-        enabled: false
-      }
+      consent_forms: prev.consent_forms.filter(consent => consent.id !== consentId)
     }));
   };
 
@@ -283,14 +274,47 @@ export default function FormConfigTool() {
     }));
   };
 
-  const handleConsentFormChange = (updates: Partial<ConsentForm>) => {
+  const updateConsentForm = (consentId: string, updates: Partial<ConsentForm>) => {
     setFormConfig(prev => ({
       ...prev,
-      consent_form: {
-        ...prev.consent_form,
-        ...updates
-      }
+      consent_forms: prev.consent_forms.map(consent => 
+        consent.id === consentId ? { ...consent, ...updates } : consent
+      )
     }));
+  };
+
+  const handleConsentFormChange = (updates: Partial<ConsentForm>) => {
+    // This is for backward compatibility with existing code
+    const consentForms = formConfig.consent_forms || [];
+    if (consentForms.length > 0) {
+      updateConsentForm(consentForms[0].id!, updates);
+    }
+  };
+
+  const handlePredefinedConsentSelection = (selectedIndex: string, consentId?: string) => {
+    if (selectedIndex === '') {
+      // Reset to empty if no selection
+      const updates = {
+        title: '',
+        content: ''
+      };
+      if (consentId) {
+        updateConsentForm(consentId, updates);
+      }
+      return;
+    }
+    
+    const index = parseInt(selectedIndex);
+    if (index >= 0 && index < CONSENT_FORM_DATA.length) {
+      const selectedConsent = CONSENT_FORM_DATA[index];
+      const updates = {
+        title: selectedConsent.title,
+        content: selectedConsent.description
+      };
+      if (consentId) {
+        updateConsentForm(consentId, updates);
+      }
+    }
   };
 
   const updateDocument = (documentId: string, updates: Partial<Document>) => {
@@ -320,13 +344,15 @@ export default function FormConfigTool() {
     }
     
     // Validate consent forms
-    if (!formConfig.consent_form.title.trim()) {
-      errors.push('Consent form title is required');
-    }
-    if (!formConfig.consent_form.content.trim()) {
-      errors.push('Consent form content is required');
-    }
-
+    (formConfig.consent_forms || []).forEach((consent, index) => {
+      if (!consent.title.trim()) {
+        errors.push(`Consent form ${index + 1}: Title is required`);
+      }
+      if (!consent.content.trim()) {
+        errors.push(`Consent form ${index + 1}: Content is required`);
+      }
+    });
+    
     // Validate documents
     formConfig.documents.forEach((doc, index) => {
       if (!doc.name.trim()) {
@@ -374,18 +400,25 @@ export default function FormConfigTool() {
             enabled: true
           }
         },
-        consent_form: formConfig.consent_form,
+        consent_forms: formConfig.consent_forms || [],
         documents: formConfig.documents,
         created_by_id: user.id,
         usage_count: 0,
         last_used_at: undefined
       };
 
+      // Convert consent_forms to consent_form for backend compatibility
+      const backendData = {
+        ...serviceData,
+        consent_form: serviceData.consent_forms
+      };
+      delete (backendData as any).consent_forms;
+
       let response;
       if (formConfig.id) {
-        response = await configToolService.updateFormConfiguration(formConfig.id, serviceData);
+        response = await configToolService.updateFormConfiguration(formConfig.id, backendData as any);
       } else {
-        response = await configToolService.createFormConfiguration(serviceData);
+        response = await configToolService.createFormConfiguration(backendData as any);
       }
 
       if (response.success) {
@@ -420,18 +453,13 @@ export default function FormConfigTool() {
       description: '',
       applicantConfig: 'single',
       sections: [],
-      consent_form: {
-        title: '',
-        content: '',
-        enabled: true,
-        required: true,
-        checkboxText: 'I agree to the terms and conditions'
-      },
+      consent_forms: [],
       documents: [],
       is_active: true,
       allowedRoles: [UserRole.ADMIN]
     });
     setSelectedConfigId(undefined);
+    setConsentFormMode('custom');
     setError(undefined);
     setSuccess(undefined);
     setShowConfigList(false);
@@ -454,6 +482,54 @@ export default function FormConfigTool() {
       const response = await configToolService.getFormConfiguration(config.config_id);
       if (response.success && response.data) {
         const configData = response.data;
+        
+        // Migration logic: Convert old consent_form to consent_forms array
+        let consentForms: ConsentForm[] = [];
+        
+        console.log('Loading configuration data:', configData);
+        console.log('Checking consent_forms:', configData.consent_forms);
+        console.log('Checking consent_form:', (configData as any).consent_form);
+        
+        if (configData.consent_forms) {
+          // New format - already an array with correct property name
+          console.log('Using consent_forms format');
+          consentForms = configData.consent_forms;
+        } else if ((configData as any).consent_form) {
+          // Handle both old formats:
+          const consentFormData = (configData as any).consent_form;
+          console.log('Processing consent_form data:', consentFormData, 'Is array:', Array.isArray(consentFormData));
+          
+          if (Array.isArray(consentFormData)) {
+            // Backend returns consent_form as array - convert to consent_forms
+            console.log('Converting consent_form array to consent_forms, count:', consentFormData.length);
+            consentForms = consentFormData.map((consent: any, index: number) => {
+              console.log(`Processing consent ${index}:`, consent);
+              return {
+                id: consent.id || `generated_${Date.now()}_${index}`,
+                title: consent.title || '',
+                content: consent.content || '',
+                enabled: consent.enabled !== false,
+                required: consent.required !== false,
+                checkboxText: consent.checkboxText || 'I agree to the terms and conditions'
+              };
+            });
+            console.log('Converted consentForms:', consentForms);
+          } else if (consentFormData.title || consentFormData.content) {
+            // Old format - single object, convert to array
+            console.log('Converting single consent_form object to consent_forms array');
+            consentForms = [{
+              id: consentFormData.id || Date.now().toString(),
+              title: consentFormData.title || '',
+              content: consentFormData.content || '',
+              enabled: consentFormData.enabled !== false,
+              required: consentFormData.required !== false,
+              checkboxText: consentFormData.checkboxText || 'I agree to the terms and conditions'
+            }];
+          }
+        }
+        
+        console.log('Final consentForms array:', consentForms);
+        
         setFormConfig({
           id: configData.id,
           config_id: configData.config_id,
@@ -462,14 +538,17 @@ export default function FormConfigTool() {
           version: configData.version,
           description: configData.description,
           applicantConfig: 'single',
-          sections: configData.sections,
-          consent_form: configData.consent_form,
-          documents: configData.documents,
+          sections: configData.sections || [],
+          consent_forms: consentForms,
+          documents: configData.documents || [],
           is_active: configData.is_active,
           allowedRoles: [UserRole.ADMIN],
           created_at: configData.created_at,
           updated_at: configData.updated_at
         });
+        
+        console.log('FormConfig state set with consent_forms:', consentForms);
+        
         setShowConfigList(false);
         setSuccess('Configuration loaded successfully');
         setError(undefined);
@@ -791,72 +870,48 @@ export default function FormConfigTool() {
             </div>
           </div>
 
-          {/* Consent Form */}
+          {/* Consent Forms */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
             <div className="bg-gray-50 dark:bg-gray-700 border-b p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Consent Form
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Consent Forms
+                </h2>
+                <Button onClick={addConsentForm} size="sm">
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Add Consent Form
+                </Button>
+              </div>
             </div>
             <div className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={formConfig.consent_form.title}
-                    onChange={(e) => handleConsentFormChange({ title: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                    placeholder="Enter consent form title..."
-                  />
+              {(formConfig.consent_forms || []).length === 0 ? (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                  <div className="max-w-sm mx-auto">
+                    <h3 className="text-lg font-medium mb-2">No consent forms configured yet</h3>
+                    <p className="text-sm">Add consent forms that users need to agree to when filling out this form.</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Content
-                  </label>
-                  <textarea
-                    value={formConfig.consent_form.content}
-                    onChange={(e) => handleConsentFormChange({ content: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white resize-none"
-                    rows={6}
-                    placeholder="Enter consent form content..."
-                  />
+              ) : (
+                <div className="space-y-4">
+                  {(() => {
+                    const consentForms = formConfig.consent_forms || [];
+                    console.log('Rendering consent forms:', consentForms, 'Count:', consentForms.length);
+                    return consentForms.map((consent, index) => {
+                      console.log(`Rendering consent form ${index}:`, consent);
+                      return (
+                        <ConsentFormCard
+                          key={consent.id}
+                          consent={consent}
+                          index={index}
+                          onUpdate={(updates) => updateConsentForm(consent.id!, updates)}
+                          onRemove={() => removeConsentForm(consent.id!)}
+                          onPredefinedSelection={(selectedIndex) => handlePredefinedConsentSelection(selectedIndex, consent.id)}
+                        />
+                      );
+                    });
+                  })()}
                 </div>
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center space-x-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={formConfig.consent_form.enabled}
-                      onChange={(e) => handleConsentFormChange({ enabled: e.target.checked })}
-                      className="rounded border-gray-300 dark:border-gray-600"
-                    />
-                    <span className="text-gray-700 dark:text-gray-300">Enable consent form</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={formConfig.consent_form.required}
-                      onChange={(e) => handleConsentFormChange({ required: e.target.checked })}
-                      className="rounded border-gray-300 dark:border-gray-600"
-                    />
-                    <span className="text-gray-700 dark:text-gray-300">Required</span>
-                  </label>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Checkbox Text
-                  </label>
-                  <input
-                    type="text"
-                    value={formConfig.consent_form.checkboxText}
-                    onChange={(e) => handleConsentFormChange({ checkboxText: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                    placeholder="Enter checkbox text..."
-                  />
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -1155,6 +1210,169 @@ function DocumentCard({ document, onUpdate, onRemove }: DocumentCardProps) {
   );
 }
 
+// Consent Form Card Component
+interface ConsentFormCardProps {
+  consent: ConsentForm;
+  index: number;
+  onUpdate: (updates: Partial<ConsentForm>) => void;
+  onRemove: () => void;
+  onPredefinedSelection: (selectedIndex: string) => void;
+}
+
+function ConsentFormCard({ consent, index, onUpdate, onRemove, onPredefinedSelection }: ConsentFormCardProps) {
+  const [consentFormMode, setConsentFormMode] = useState<'predefined' | 'custom'>('custom');
+
+  return (
+    <div className="border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-750">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-600">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-gray-900 dark:text-white">
+            Consent Form {index + 1}
+          </h3>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRemove}
+          className="text-red-600 hover:text-red-700"
+        >
+          <TrashIcon className="w-4 h-4" />
+        </Button>
+      </div>
+      
+      <div className="p-4 space-y-4">
+        {/* Consent Form Mode Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+            Consent Form Type
+          </label>
+          <div className="flex space-x-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name={`consentMode-${consent.id}`}
+                value="predefined"
+                checked={consentFormMode === 'predefined'}
+                onChange={(e) => setConsentFormMode(e.target.value as 'predefined' | 'custom')}
+                className="rounded border-gray-300 dark:border-gray-600"
+              />
+              <span className="text-gray-700 dark:text-gray-300">Use Predefined Consent</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="radio"
+                name={`consentMode-${consent.id}`}
+                value="custom"
+                checked={consentFormMode === 'custom'}
+                onChange={(e) => setConsentFormMode(e.target.value as 'predefined' | 'custom')}
+                className="rounded border-gray-300 dark:border-gray-600"
+              />
+              <span className="text-gray-700 dark:text-gray-300">Create Custom Consent</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Predefined Consent Dropdown */}
+        {consentFormMode === 'predefined' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+              Select Predefined Consent Form
+            </label>
+            <select
+              onChange={(e) => onPredefinedSelection(e.target.value)}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              defaultValue=""
+            >
+              <option value="">Select a predefined consent form...</option>
+              {CONSENT_FORM_DATA.map((consentData: any, dataIndex: number) => (
+                <option key={dataIndex} value={dataIndex.toString()}>
+                  {consentData.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Title Field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+            Title
+          </label>
+          <input
+            type="text"
+            value={consent.title}
+            onChange={(e) => onUpdate({ title: e.target.value })}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
+            placeholder="Enter consent form title..."
+            readOnly={consentFormMode === 'predefined'}
+          />
+          {consentFormMode === 'predefined' && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Title is automatically set from the selected predefined consent form
+            </p>
+          )}
+        </div>
+
+        {/* Content Field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+            Content
+          </label>
+          <textarea
+            value={consent.content}
+            onChange={(e) => onUpdate({ content: e.target.value })}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white resize-none"
+            rows={6}
+            placeholder="Enter consent form content..."
+            readOnly={consentFormMode === 'predefined'}
+          />
+          {consentFormMode === 'predefined' && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Content is automatically set from the selected predefined consent form
+            </p>
+          )}
+        </div>
+
+        {/* Consent Form Options */}
+        <div className="flex items-center space-x-4">
+          <label className="flex items-center space-x-2 text-sm">
+            <input
+              type="checkbox"
+              checked={consent.enabled}
+              onChange={(e) => onUpdate({ enabled: e.target.checked })}
+              className="rounded border-gray-300 dark:border-gray-600"
+            />
+            <span className="text-gray-700 dark:text-gray-300">Enable consent form</span>
+          </label>
+          <label className="flex items-center space-x-2 text-sm">
+            <input
+              type="checkbox"
+              checked={consent.required}
+              onChange={(e) => onUpdate({ required: e.target.checked })}
+              className="rounded border-gray-300 dark:border-gray-600"
+            />
+            <span className="text-gray-700 dark:text-gray-300">Required</span>
+          </label>
+        </div>
+
+        {/* Checkbox Text */}
+        <div>
+          <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+            Checkbox Text
+          </label>
+          <input
+            type="text"
+            value={consent.checkboxText}
+            onChange={(e) => onUpdate({ checkboxText: e.target.value })}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
+            placeholder="Enter checkbox text..."
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Form Preview Modal Component
 interface FormPreviewModalProps {
   formConfig: FormConfig;
@@ -1206,33 +1424,20 @@ function FormPreviewModal({ formConfig, onClose, onConsentFormChange }: FormPrev
               </div>
             )}
 
-            {formConfig.consent_form.enabled && (
+            {(formConfig.consent_forms || []).length > 0 && (
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border">
-                <h4 className="font-medium mb-3 text-gray-900 dark:text-white">Consent Form:</h4>
+                <h4 className="font-medium mb-3 text-gray-900 dark:text-white">Consent Forms:</h4>
                 <div className="space-y-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 dark:text-white">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      value={formConfig.consent_form.title}
-                      onChange={(e) => onConsentFormChange({ title: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 dark:text-white">
-                      Content
-                    </label>
-                    <textarea
-                      value={formConfig.consent_form.content}
-                      onChange={(e) => onConsentFormChange({ content: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white resize-none"
-                      rows={6}
-                      placeholder="Enter consent form content..."
-                    />
-                  </div>
+                  {(formConfig.consent_forms || []).map((consent, index) => (
+                    <div key={consent.id} className="flex items-center justify-between p-2 bg-white dark:bg-gray-600 rounded text-sm">
+                      <div>
+                        <span className="font-medium text-gray-900 dark:text-white">{consent.title}</span>
+                      </div>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {consent.enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

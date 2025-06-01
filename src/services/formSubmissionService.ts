@@ -2,26 +2,34 @@ import type { ApiResponse } from '../types';
 import { apiService } from './api';
 import type { FormConfigurationData } from './configToolService';
 
+export type FormSubmissionStatus = 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
+
 export interface FormSubmissionData {
-  id?: string;
+  id: string;
   form_config_id: string;
   user_id: string;
-  submission_data: Record<string, any>;
-  status: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
-  submitted_at?: string;
-  created_at?: string;
-  updated_at?: string;
+  form_data: Record<string, any>;
+  status: FormSubmissionStatus;
+  submitted_at?: Date;
+  reviewed_at?: Date;
+  reviewed_by?: string;
+  review_notes?: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface FormSubmissionList {
   id: string;
   form_config_id: string;
-  config_name: string;
   user_id: string;
-  status: string;
-  submitted_at: string | null;
-  created_at: string;
-  updated_at: string;
+  form_data: Record<string, any>;
+  status: FormSubmissionStatus;
+  submitted_at?: Date;
+  reviewed_at?: Date;
+  reviewed_by?: string;
+  review_notes?: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 class FormSubmissionService {

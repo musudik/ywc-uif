@@ -32,6 +32,7 @@ export interface CustomFields {
 }
 
 export interface ConsentForm {
+  id?: string;
   title: string;
   content: string;
   enabled: boolean;
@@ -56,7 +57,7 @@ export interface FormConfigurationData {
   version: string;
   description: string;
   sections: Section[];
-  consent_form: ConsentForm;
+  consent_forms: ConsentForm[];
   documents: Document[];
   is_active: boolean;
   allowedRoles?: UserRole[];
@@ -336,13 +337,15 @@ class ConfigToolService {
       });
     }
 
-    if (data.consent_form) {
-      if (!data.consent_form.title?.trim()) {
-        errors.push('Consent form title is required');
-      }
-      if (!data.consent_form.content?.trim()) {
-        errors.push('Consent form content is required');
-      }
+    if (data.consent_forms && data.consent_forms.length > 0) {
+      data.consent_forms.forEach((consentForm, index) => {
+        if (!consentForm.title?.trim()) {
+          errors.push(`Consent form ${index + 1}: Title is required`);
+        }
+        if (!consentForm.content?.trim()) {
+          errors.push(`Consent form ${index + 1}: Content is required`);
+        }
+      });
     }
 
     if (data.documents && data.documents.length > 0) {
