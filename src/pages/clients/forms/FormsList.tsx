@@ -74,7 +74,6 @@ export default function FormsList() {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      showError(t('common.error') || 'Error', t('forms.dynamic.loadError') || 'Failed to load forms data');
       showError(t('common.error'), t('forms.dynamic.loadError'));
     } finally {
       setLoading(false);

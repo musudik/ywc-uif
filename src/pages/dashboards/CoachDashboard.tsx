@@ -17,7 +17,7 @@ interface CoachStats {
 }
 
 interface ClientProgress {
-  personal_id: string;
+  user_id: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -152,7 +152,7 @@ export default function CoachDashboard() {
             }
 
             return {
-              personal_id: client.personal_id,
+              user_id: client.user_id,
               first_name: client.first_name,
               last_name: client.last_name,
               email: client.email,
@@ -164,9 +164,9 @@ export default function CoachDashboard() {
               completedSections,
             };
           } catch (error) {
-            console.error('Error calculating progress for client:', client.personal_id, error);
+            console.error('Error calculating progress for client:', client.user_id, error);
             return {
-              personal_id: client.personal_id,
+              user_id: client.user_id,
               first_name: client.first_name,
               last_name: client.last_name,
               email: client.email,

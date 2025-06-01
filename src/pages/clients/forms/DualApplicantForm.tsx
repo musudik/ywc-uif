@@ -69,7 +69,6 @@ export default function DualApplicantForm() {
             setFormConfig(configResponse.data);
           }
         } else {
-          showError('Error', 'Failed to load form submission');
           showError(t('common.error'), t('forms.dynamic.loadError'));
           navigate('/dashboard/forms');
         }
@@ -85,14 +84,12 @@ export default function DualApplicantForm() {
           setApplicant2Data({});
           setIsViewMode(false);
         } else {
-          showError('Error', 'Failed to load form configuration');
           showError(t('common.error'), t('forms.dynamic.loadError'));
           navigate('/dashboard/forms');
         }
       }
     } catch (error) {
       console.error('Error loading form data:', error);
-      showError('Error', 'Failed to load form data');
       showError(t('common.error'), t('forms.dynamic.loadError'));
       navigate('/dashboard/forms');
     } finally {
@@ -190,7 +187,6 @@ export default function DualApplicantForm() {
             navigate('/dashboard/forms');
           }
         } else {
-          showError('Error', response.message || 'Failed to save form');
           showError(t('common.error'), response.message || t('forms.dynamic.submitError'));
         }
       } else {
@@ -216,13 +212,11 @@ export default function DualApplicantForm() {
             navigate('/dashboard/forms');
           }
         } else {
-          showError('Error', response.message || 'Failed to save form');
           showError(t('common.error'), response.message || t('forms.dynamic.submitError'));
         }
       }
     } catch (error) {
       console.error('Error saving form:', error);
-      showError('Error', 'Failed to save form');
       showError(t('common.error'), t('forms.dynamic.submitError'));
     } finally {
       setSaving(false);
@@ -256,8 +250,6 @@ export default function DualApplicantForm() {
       <div className="container mx-auto p-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
           <div className="p-6 text-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('forms.dual.formNotFoundTitle') || 'Form Not Found'}</h2>
-            <p className="text-gray-600 dark:text-gray-400">{t('forms.dual.formNotFoundMessage') || 'The requested form configuration could not be found.'}</p>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('forms.dual.formNotFoundTitle')}</h2>
             <p className="text-gray-600 dark:text-gray-400">{t('forms.dual.formNotFoundMessage')}</p>
             <Button onClick={() => navigate('/dashboard/forms')} className="mt-4">
@@ -277,8 +269,6 @@ export default function DualApplicantForm() {
         </Button>
         {isViewMode && submission?.status === 'draft' && (
           <Button onClick={handleEdit}>
-            Edit Form
-            {t('forms.dynamic.editForm') || 'Edit Form'}
             {t('forms.dynamic.editForm')}
           </Button>
         )}
@@ -297,8 +287,6 @@ export default function DualApplicantForm() {
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <span className="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400 px-2 py-1 rounded text-sm">
-                  Joint Application
-                  {t('forms.list.jointApplication') || 'Joint Application'}
                   {t('forms.list.jointApplication')}
                 </span>
                 <span className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 px-2 py-1 rounded text-sm">
@@ -330,13 +318,9 @@ export default function DualApplicantForm() {
             <div className="space-y-6">
               <div className="border-b border-gray-200 dark:border-gray-600 pb-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Applicant 1
-                  {t('forms.list.applicant1') || 'Applicant 1'}
                   {t('forms.list.applicant1')}
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Primary applicant information
-                  {t('forms.list.primaryApplicant') || 'Primary applicant information'}
                   {t('forms.list.primaryApplicant')}
                 </p>
               </div>
@@ -357,13 +341,9 @@ export default function DualApplicantForm() {
             <div className="space-y-6">
               <div className="border-b border-gray-200 dark:border-gray-600 pb-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Applicant 2
-                  {t('forms.list.applicant2') || 'Applicant 2'}
                   {t('forms.list.applicant2')}
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Secondary applicant information
-                  {t('forms.list.secondaryApplicant') || 'Secondary applicant information'}
                   {t('forms.list.secondaryApplicant')}
                 </p>
               </div>

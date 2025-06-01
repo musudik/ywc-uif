@@ -16,6 +16,7 @@ interface ClientData {
   created_at?: string;
   coach_id?: string;
   personal_id?: string;
+  user_id?: string;
   applicant_type?: string;
 }
 
@@ -38,27 +39,31 @@ export default function ClientManagement() {
     try {
       setLoading(true);
       if (user?.role === 'ADMIN') {
-        // For admin, get all clients
-        const allClients = await authService.getAllClients();
+        // For admins, get all users with CLIENT role
+        const allUsers = await authService.getAllUsers();
+        const clientUsers = allUsers.filter((u: any) => u.role === 'CLIENT');
+        
         // Transform the data to match our interface
-        const clientData = allClients.map(client => ({
-          id: client.id,
+        const clientData = clientUsers.map((client: any) => ({
+          id: client.id || client.user_id,
           first_name: client.first_name,
           last_name: client.last_name,
           email: client.email,
-          is_active: true, // Default to active for now
-          created_at: new Date().toISOString(), // Default date for now
-          applicant_type: 'PrimaryApplicant',
-          personal_id: client.id, // Use id as personal_id for now
+          is_active: client.is_active ?? true,
+          created_at: client.created_at,
+          coach_id: client.coach_id,
+          user_id: client.id || client.user_id,
+          applicant_type: client.applicant_type,
         }));
+        
         setClients(clientData);
         setTotalClients(clientData.length);
       } else {
         // For coaches, get their assigned clients
         const coachClients = await authService.getCoachClients();
         // Transform the data to match our interface
-        const clientData = coachClients.map(client => ({
-          id: client.personal_id,
+        const clientData = coachClients.map((client: any) => ({
+          id: client.personal_id || client.user_id || client.id,
           first_name: client.first_name,
           last_name: client.last_name,
           email: client.email,
@@ -66,6 +71,7 @@ export default function ClientManagement() {
           created_at: client.created_at,
           applicant_type: client.applicant_type,
           personal_id: client.personal_id,
+          user_id: client.user_id || client.id,
         }));
         setClients(clientData);
         setTotalClients(clientData.length);

@@ -23,7 +23,14 @@ export default function PersonalDetailsForm() {
   const [dataLoading, setDataLoading] = useState(false);
   const [existingPersonalId, setExistingPersonalId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [availableCoaches, setAvailableCoaches] = useState<Array<{ personal_id: string; first_name: string; last_name: string; }>>([]);
+  const [availableCoaches, setAvailableCoaches] = useState<Array<{ 
+    user_id: string; 
+    first_name: string; 
+    last_name: string; 
+    email: string; 
+    applicant_type: string; 
+    created_at: string; 
+  }>>([]);
   
   // Determine the correct coach_id based on user role
   const getCoachId = () => {
@@ -411,7 +418,7 @@ export default function PersonalDetailsForm() {
                   >
                     <option value="">{t('forms.personalDetails.selectCoach')}</option>
                     {availableCoaches.map((coach) => (
-                      <option key={coach.personal_id} value={coach.personal_id}>
+                      <option key={coach.user_id} value={coach.user_id}>
                         {coach.first_name} {coach.last_name}
                       </option>
                     ))}
