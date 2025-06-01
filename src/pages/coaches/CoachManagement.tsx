@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { authService } from '../../services/authService';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
@@ -17,6 +18,7 @@ interface CoachFormData {
 export default function CoachManagement() {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+  const { t } = useLanguage();
   const [coaches, setCoaches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -156,9 +158,9 @@ export default function CoachManagement() {
   };
 
   const filteredCoaches = coaches.filter(coach =>
-    coach.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    coach.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    coach.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (coach.first_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (coach.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (coach.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -171,14 +173,14 @@ export default function CoachManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Coach Management
+            {t('coaches.management.title') || 'Coach Management'}
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Manage all coaches in the system
+            {t('coaches.management.subtitle') || 'Manage all coaches in the system'}
           </p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
-          Add New Coach
+          {t('coaches.management.addNewCoach') || 'Add New Coach'}
         </Button>
       </div>
 
@@ -191,7 +193,7 @@ export default function CoachManagement() {
               name="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search coaches by name or email..."
+              placeholder={t('placeholders.searchCoaches') || 'Search coaches by name or email...'}
             />
           </div>
           <div className="flex items-center space-x-6 text-sm">
@@ -199,19 +201,19 @@ export default function CoachManagement() {
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {coaches.length}
               </div>
-              <div className="text-gray-500">Total Coaches</div>
+              <div className="text-gray-500">{t('coaches.management.totalCoaches') || 'Total Coaches'}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {coaches.filter(c => c.is_active).length}
               </div>
-              <div className="text-gray-500">Active</div>
+              <div className="text-gray-500">{t('clients.management.active') || 'Active'}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
                 {coaches.filter(c => !c.is_active).length}
               </div>
-              <div className="text-gray-500">Inactive</div>
+              <div className="text-gray-500">{t('clients.management.inactive') || 'Inactive'}</div>
             </div>
           </div>
         </div>
@@ -246,11 +248,11 @@ export default function CoachManagement() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
-                        {coach.first_name[0]}{coach.last_name[0]}
+                        {(coach.first_name?.[0] || '?')}{(coach.last_name?.[0] || '?')}
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {coach.first_name} {coach.last_name}
+                          {coach.first_name || 'N/A'} {coach.last_name || 'N/A'}
                         </div>
                         {/* <div className="text-sm text-gray-500 dark:text-gray-400">
                           ID: {coach.id}
@@ -259,7 +261,7 @@ export default function CoachManagement() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {coach.email}
+                    {coach.email || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -327,26 +329,26 @@ export default function CoachManagement() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Add New Coach
+                {t('coaches.management.addNewCoach') || 'Add New Coach'}
               </h3>
             </div>
             <form onSubmit={handleCreateCoach} className="p-6 space-y-4">
               <TextInput
-                label="First Name"
+                label={t('forms.personalDetails.firstName') || 'First Name'}
                 name="first_name"
                 value={formData.first_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
                 required
               />
               <TextInput
-                label="Last Name"
+                label={t('forms.personalDetails.lastName') || 'Last Name'}
                 name="last_name"
                 value={formData.last_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
                 required
               />
               <TextInput
-                label="Email"
+                label={t('forms.personalDetails.email') || 'Email'}
                 name="email"
                 type="email"
                 value={formData.email}
@@ -354,7 +356,7 @@ export default function CoachManagement() {
                 required
               />
               <TextInput
-                label="Password"
+                label={t('auth.password') || 'Password'}
                 name="password"
                 type="password"
                 value={formData.password}
@@ -363,10 +365,10 @@ export default function CoachManagement() {
               />
               <div className="flex justify-end space-x-3 pt-4">
                 <Button type="button" variant="outline" onClick={closeModals}>
-                  Cancel
+                  {t('common.cancel') || 'Cancel'}
                 </Button>
                 <Button type="submit" loading={actionLoading === 'create'}>
-                  Create Coach
+                  {t('coaches.management.createCoach') || 'Create Coach'}
                 </Button>
               </div>
             </form>
@@ -380,26 +382,26 @@ export default function CoachManagement() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Edit Coach
+                {t('coaches.management.editCoach') || 'Edit Coach'}
               </h3>
             </div>
             <form onSubmit={handleUpdateCoach} className="p-6 space-y-4">
               <TextInput
-                label="First Name"
+                label={t('forms.personalDetails.firstName') || 'First Name'}
                 name="first_name"
                 value={formData.first_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
                 required
               />
               <TextInput
-                label="Last Name"
+                label={t('forms.personalDetails.lastName') || 'Last Name'}
                 name="last_name"
                 value={formData.last_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
                 required
               />
               <TextInput
-                label="Email"
+                label={t('forms.personalDetails.email') || 'Email'}
                 name="email"
                 type="email"
                 value={formData.email}
@@ -408,10 +410,10 @@ export default function CoachManagement() {
               />
               <div className="flex justify-end space-x-3 pt-4">
                 <Button type="button" variant="outline" onClick={closeModals}>
-                  Cancel
+                  {t('common.cancel') || 'Cancel'}
                 </Button>
                 <Button type="submit" loading={actionLoading === 'update'}>
-                  Update Coach
+                  {t('coaches.management.updateCoach') || 'Update Coach'}
                 </Button>
               </div>
             </form>

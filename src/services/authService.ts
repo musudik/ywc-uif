@@ -191,7 +191,7 @@ export class AuthService {
 
   // Create new user (Admin only)
   async createUser(userData: RegisterRequest): Promise<User> {
-    const response = await apiService.post<User>('/users', userData);
+    const response = await apiService.post<User>('/auth/register', userData);
     
     if (response.success && response.data) {
       return response.data;

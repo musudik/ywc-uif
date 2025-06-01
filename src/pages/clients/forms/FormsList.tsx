@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useLanguage } from '../../context/LanguageContext';
-import { useNotification } from '../../context/NotificationContext';
-import Button from '../../components/ui/Button';
-import formSubmissionService, { type FormSubmissionList } from '../../services/formSubmissionService';
-import type { FormConfigurationData } from '../../services/configToolService';
+import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
+import { useNotification } from '../../../context/NotificationContext';
+import Button from '../../../components/ui/Button';
+import formSubmissionService, { type FormSubmissionList } from '../../../services/formSubmissionService';
+import type { FormConfigurationList } from '../../../services/configToolService';
 
 // Icon components
 const DocumentIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -40,7 +40,7 @@ export default function FormsList() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const [availableForms, setAvailableForms] = useState<FormConfigurationData[]>([]);
+  const [availableForms, setAvailableForms] = useState<FormConfigurationList[]>([]);
   const [userSubmissions, setUserSubmissions] = useState<FormSubmissionList[]>([]);
 
   useEffect(() => {
@@ -74,22 +74,40 @@ export default function FormsList() {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      showError('Error', 'Failed to load forms data');
+      showError(t('common.error') || 'Error', t('forms.dynamic.loadError') || 'Failed to load forms data');
+      showError(t('common.error'), t('forms.dynamic.loadError'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFillForm = (formConfig: FormConfigurationData) => {
+  const handleFillForm = (formConfig: FormConfigurationList) => {
     // Check if user already has a submission for this form
     const existingSubmission = userSubmissions.find(sub => sub.form_config_id === formConfig.config_id);
     
-    if (existingSubmission) {
-      // Navigate to edit existing submission
-      navigate(`/dashboard/forms/dynamic/${existingSubmission.id}`);
+    console.log("applicantconfig: " + formConfig.applicantconfig);
+    console.log("Full form config:", formConfig);
+    
+    // Check if this is a joint/dual applicant form
+    if (formConfig.applicantconfig === 'joint') {
+      console.log("Redirecting to dual applicant form");
+      if (existingSubmission) {
+        // Navigate to edit existing dual submission
+        navigate(`/dashboard/forms/dual-applicant/${existingSubmission.id}`);
+      } else {
+        // Navigate to create new dual submission
+        navigate(`/dashboard/forms/dual-applicant/new/${formConfig.config_id}`);
+      }
     } else {
-      // Navigate to create new submission
-      navigate(`/dashboard/forms/dynamic/new/${formConfig.config_id}`);
+      console.log("Redirecting to single applicant form");
+      // Handle single applicant forms as before
+      if (existingSubmission) {
+        // Navigate to edit existing submission
+        navigate(`/dashboard/forms/dynamic/${existingSubmission.id}`);
+      } else {
+        // Navigate to create new submission
+        navigate(`/dashboard/forms/dynamic/new/${formConfig.config_id}`);
+      }
     }
   };
 
@@ -120,7 +138,7 @@ export default function FormsList() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading forms...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('forms.list.loadingForms')}</span>
           </div>
         </div>
       </div>
@@ -134,20 +152,20 @@ export default function FormsList() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Available Forms
+              {t('forms.list.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-1">
-              Fill out forms and track your submissions
+              {t('forms.list.subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-2">
               <DocumentIcon className="w-5 h-5" />
-              <span>{availableForms.length} forms available</span>
+              <span>{availableForms.length} {t('forms.list.formsAvailable')}</span>
             </div>
             <div className="flex items-center gap-2">
               <ClockIcon className="w-5 h-5" />
-              <span>{userSubmissions.length} submissions</span>
+              <span>{userSubmissions.length} {t('forms.list.submissions')}</span>
             </div>
           </div>
         </div>
@@ -157,15 +175,15 @@ export default function FormsList() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
         <div className="bg-gray-50 dark:bg-gray-700 border-b p-6">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Available Forms
+            {t('forms.list.availableForms')}
           </h2>
         </div>
         <div className="p-6">
           {availableForms.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <DocumentIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No forms available</h3>
-              <p className="text-sm">Contact your administrator to configure forms</p>
+              <h3 className="text-lg font-medium mb-2">{t('forms.list.noForms')}</h3>
+              <p className="text-sm">{t('forms.list.noFormsMessage')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -190,7 +208,7 @@ export default function FormsList() {
                             v{form.version}
                           </span>
                           <span className="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400 px-2 py-1 rounded">
-                            {form.sections.length} sections
+                            {form.sections.length} {t('forms.list.sections')}
                           </span>
                         </div>
                       </div>
@@ -199,7 +217,7 @@ export default function FormsList() {
                     {existingSubmission ? (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-300">Status:</span>
+                          <span className="text-gray-600 dark:text-gray-300">{t('forms.list.status')}</span>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(existingSubmission.status)}`}>
                             {existingSubmission.status.charAt(0).toUpperCase() + existingSubmission.status.slice(1)}
                           </span>
@@ -212,7 +230,7 @@ export default function FormsList() {
                             className="flex-1"
                           >
                             <EyeIcon className="w-4 h-4 mr-2" />
-                            View
+                            {t('forms.list.view')}
                           </Button>
                           {existingSubmission.status === 'draft' && (
                             <Button
@@ -220,7 +238,7 @@ export default function FormsList() {
                               onClick={() => handleFillForm(form)}
                               className="flex-1"
                             >
-                              Continue
+                              {t('forms.list.continue')}
                             </Button>
                           )}
                         </div>
@@ -232,7 +250,7 @@ export default function FormsList() {
                         size="sm"
                       >
                         <PlusIcon className="w-4 h-4 mr-2" />
-                        Fill Form
+                        {t('forms.list.fillForm')}
                       </Button>
                     )}
                   </div>
@@ -248,7 +266,7 @@ export default function FormsList() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
           <div className="bg-gray-50 dark:bg-gray-700 border-b p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              My Submissions
+              {t('forms.list.mySubmissions')}
             </h2>
           </div>
           <div className="p-6">
@@ -257,12 +275,12 @@ export default function FormsList() {
                 <div key={submission.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 dark:text-white">
-                      {submission.config_name}
+                      {t('forms.list.formSubmission')}
                     </h3>
                     <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      <span>Created: {new Date(submission.created_at).toLocaleDateString()}</span>
+                      <span>{t('forms.list.created')} {new Date(submission.created_at).toLocaleDateString()}</span>
                       {submission.submitted_at && (
-                        <span>Submitted: {new Date(submission.submitted_at).toLocaleDateString()}</span>
+                        <span>{t('forms.list.submitted')} {new Date(submission.submitted_at).toLocaleDateString()}</span>
                       )}
                     </div>
                   </div>
@@ -276,7 +294,7 @@ export default function FormsList() {
                       onClick={() => handleViewSubmission(submission)}
                     >
                       <EyeIcon className="w-4 h-4 mr-2" />
-                      View
+                      {t('forms.list.view')}
                     </Button>
                   </div>
                 </div>

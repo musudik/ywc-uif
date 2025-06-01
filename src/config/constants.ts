@@ -134,3 +134,124 @@ export const CONSENT_FORM_DATA: any = [
     REAL_ESTATE_CONSENT_FORM_DATA,
     DATA_STORAGE_CONSENT_FORM_DATA
 ];
+
+export const PASSPORT_DOCUMENT_CONFIG = {
+  name: 'Passport',
+  maxSize: 5,
+  required: true,
+  description: 'Passport',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const RESIDENCE_PERMIT_DOCUMENT_CONFIG = {
+  name: 'Residence Permit',
+  maxSize: 5,
+  required: true,
+  description: 'Residence Permit',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const DRIVING_LICENSE_DOCUMENT_CONFIG = {
+  name: 'Driving License',
+  maxSize: 5,
+  required: true,
+  description: 'Driving License',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const BANK_STATEMENT_DOCUMENT_CONFIG = {
+  name: 'Bank Statement',
+  maxSize: 5,
+  required: true,
+  description: 'Bank Statement of past 3 months',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const INCOME_PROOF_DOCUMENT_CONFIG = {
+  name: 'Income Proof',
+  maxSize: 5,
+  required: true,
+  description: 'Income Proof of past 3 months',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const EMPLOYMENT_PROOF_DOCUMENT_CONFIG = {
+  name: 'Employment Proof',
+  maxSize: 5,
+  required: true,
+  description: 'Employment Proof of past 3 months',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const OTHER_DOCUMENT_CONFIG = {  
+  name: 'Other',
+  maxSize: 5,
+  required: false,
+  description: 'Other',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const PERSONAL_LOAN_DOCUMENT_CONFIG = {
+  name: 'Personal Loan',
+  maxSize: 5,
+  required: false,
+  description: 'Personal Loan',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const MORTGAGE_LOAN_DOCUMENT_CONFIG = {
+  name: 'Mortgage Loan',
+  maxSize: 5,
+  required: false,
+  description: 'Mortgage Loan',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const BUSINESS_LOAN_DOCUMENT_CONFIG = {
+  name: 'Business Loan',
+  maxSize: 5,
+  required: false,
+  description: 'Business Loan',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const CAR_LOAN_DOCUMENT_CONFIG = {
+  name: 'Car Loan',
+  maxSize: 5,
+  required: false,
+  description: 'Car Loan',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const OTHER_LOAN_DOCUMENT_CONFIG = {
+  name: 'Other Loan',
+  maxSize: 5,
+  required: false,
+  description: 'Other Loan',
+  acceptedTypes: ['pdf', 'jpg', 'png']
+};
+
+export const DOCUMENT_CONFIG = [
+  PASSPORT_DOCUMENT_CONFIG,
+  RESIDENCE_PERMIT_DOCUMENT_CONFIG,
+  DRIVING_LICENSE_DOCUMENT_CONFIG,
+  BANK_STATEMENT_DOCUMENT_CONFIG,
+  INCOME_PROOF_DOCUMENT_CONFIG,
+  EMPLOYMENT_PROOF_DOCUMENT_CONFIG,
+  PERSONAL_LOAN_DOCUMENT_CONFIG,
+  MORTGAGE_LOAN_DOCUMENT_CONFIG,
+  BUSINESS_LOAN_DOCUMENT_CONFIG,
+  CAR_LOAN_DOCUMENT_CONFIG,
+  OTHER_LOAN_DOCUMENT_CONFIG,
+  OTHER_DOCUMENT_CONFIG
+];
+
+
+export const APPLICANT_TYPES = [
+  'single',
+  'joint',
+  'family',
+  'business',
+  'individual',
+  'multiple'
+];

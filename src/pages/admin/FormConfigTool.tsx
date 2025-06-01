@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
 import type { FormField, Section } from '../../types';
 import { SECTION_DEFINITIONS } from '../../types';
-import { CONSENT_FORM_DATA } from '../../config/constants';
+import { CONSENT_FORM_DATA, DOCUMENT_CONFIG, APPLICANT_TYPES } from '../../config/constants';
 import Button from '../../components/ui/Button';
 import configToolService, { 
   type FormConfigurationData, 
@@ -41,13 +41,6 @@ const SECTION_TYPES = [
   'liabilities'
 ] as const;
 
-// Applicant configuration types
-const APPLICANT_TYPES = [
-  'single',
-  'dual-primary-secondary',
-  'family-group'
-] as const;
-
 type FormType = typeof FORM_TYPES[number];
 type SectionType = typeof SECTION_TYPES[number];
 type ApplicantConfigType = typeof APPLICANT_TYPES[number];
@@ -62,7 +55,7 @@ interface FormConfig {
   form_type: FormType;
   version: string;
   description: string;
-  applicantConfig: ApplicantConfigType;
+  applicantconfig: ApplicantConfigType;
   sections: Section[];
   consent_forms: ConsentForm[];
   documents: Document[];
@@ -122,7 +115,7 @@ export default function FormConfigTool() {
     form_type: 'personal-details',
     version: '1.0.0',
     description: '',
-    applicantConfig: 'single',
+    applicantconfig: 'single',
     sections: [],
     consent_forms: [],
     documents: [],
@@ -239,6 +232,22 @@ export default function FormConfigTool() {
     setFormConfig(prev => ({
       ...prev,
       documents: [...prev.documents, newDocument]
+    }));
+  };
+
+  const addPredefinedDocuments = (selectedDocuments: typeof DOCUMENT_CONFIG) => {
+    const newDocuments: Document[] = selectedDocuments.map(docConfig => ({
+      id: Date.now().toString() + '_' + Math.random(),
+      name: docConfig.name,
+      maxSize: docConfig.maxSize,
+      required: docConfig.required,
+      description: docConfig.description,
+      acceptedTypes: docConfig.acceptedTypes
+    }));
+    
+    setFormConfig(prev => ({
+      ...prev,
+      documents: [...prev.documents, ...newDocuments]
     }));
   };
 
@@ -388,6 +397,7 @@ export default function FormConfigTool() {
         form_type: formConfig.form_type,
         version: formConfig.version,
         description: formConfig.description,
+        applicantconfig: formConfig.applicantconfig,
         is_active: formConfig.is_active,
         sections: formConfig.sections,
         custom_fields: formConfig.custom_fields || {
@@ -451,7 +461,7 @@ export default function FormConfigTool() {
       form_type: 'personal-details',
       version: '1.0.0',
       description: '',
-      applicantConfig: 'single',
+      applicantconfig: 'single',
       sections: [],
       consent_forms: [],
       documents: [],
@@ -537,7 +547,7 @@ export default function FormConfigTool() {
           form_type: configData.form_type as FormType,
           version: configData.version,
           description: configData.description,
-          applicantConfig: 'single',
+          applicantconfig: (configData.applicantconfig as ApplicantConfigType) || 'single',
           sections: configData.sections || [],
           consent_forms: consentForms,
           documents: configData.documents || [],
@@ -800,13 +810,15 @@ export default function FormConfigTool() {
                     Applicant Configuration *
                   </label>
                   <select
-                    value={formConfig.applicantConfig}
-                    onChange={(e) => handleBasicInfoChange('applicantConfig', e.target.value as ApplicantConfigType)}
+                    value={formConfig.applicantconfig}
+                    onChange={(e) => handleBasicInfoChange('applicantconfig', e.target.value as ApplicantConfigType)}
                     className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="single">Single Applicant</option>
-                    <option value="dual-primary-secondary">Dual Applicant (Primary + Secondary)</option>
-                    <option value="family-group">Family Group</option>
+                    {APPLICANT_TYPES.map(type => (
+                      <option key={type} value={type}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -922,10 +934,13 @@ export default function FormConfigTool() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Document Requirements
                 </h2>
-                <Button onClick={addDocument} size="sm">
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Add Document
-                </Button>
+                <div className="flex items-center gap-2">
+                  <PredefinedDocumentSelector onSelectDocuments={addPredefinedDocuments} />
+                  <Button onClick={addDocument} size="sm" variant="outline">
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                    Add Custom Document
+                  </Button>
+                </div>
               </div>
             </div>
             <div className="p-6">
@@ -933,7 +948,7 @@ export default function FormConfigTool() {
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
                   <div className="max-w-sm mx-auto">
                     <h3 className="text-lg font-medium mb-2">No document requirements configured yet</h3>
-                    <p className="text-sm">Add documents that users need to upload with this form.</p>
+                    <p className="text-sm">Choose from predefined documents or add custom documents that users need to upload with this form.</p>
                   </div>
                 </div>
               ) : (
@@ -1400,7 +1415,7 @@ function FormPreviewModal({ formConfig, onClose, onConsentFormChange }: FormPrev
                   {formConfig.form_type}
                 </span>
                 <span className="bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400 px-2 py-1 rounded">
-                  {formConfig.applicantConfig}
+                  {formConfig.applicantconfig}
                 </span>
                 <span className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 px-2 py-1 rounded">
                   v{formConfig.version}
@@ -1500,6 +1515,90 @@ function SectionSelector({ onSelect }: { onSelect: (sectionType: string) => void
       >
         Add Section
       </Button>
+    </div>
+  );
+}
+
+// Predefined Document Selector Component
+interface PredefinedDocumentSelectorProps {
+  onSelectDocuments: (selectedDocuments: typeof DOCUMENT_CONFIG) => void;
+}
+
+function PredefinedDocumentSelector({ onSelectDocuments }: PredefinedDocumentSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+
+  const handleToggleDocument = (index: number) => {
+    const newSelected = selectedItems.includes(index)
+      ? selectedItems.filter(i => i !== index)
+      : [...selectedItems, index];
+    setSelectedItems(newSelected);
+  };
+
+  const handleAddSelected = () => {
+    const selectedDocuments = selectedItems.map(index => DOCUMENT_CONFIG[index]);
+    onSelectDocuments(selectedDocuments);
+    setSelectedItems([]);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <Button
+        onClick={() => setIsOpen(!isOpen)}
+        size="sm"
+        variant="secondary"
+      >
+        <PlusIcon className="w-4 h-4 mr-2" />
+        Add Predefined Documents
+      </Button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50">
+          <div className="p-4">
+            <h3 className="font-medium text-gray-900 dark:text-white mb-3">
+              Select Predefined Documents
+            </h3>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {DOCUMENT_CONFIG.map((doc, index) => (
+                <label key={index} className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.includes(index)}
+                    onChange={() => handleToggleDocument(index)}
+                    className="rounded border-gray-300 dark:border-gray-600 mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-gray-900 dark:text-white">
+                      {doc.name}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {doc.description} • {doc.acceptedTypes.join(', ')} • Max {doc.maxSize}MB
+                      {doc.required && <span className="text-red-500"> • Required</span>}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <Button
+                onClick={() => setIsOpen(false)}
+                size="sm"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddSelected}
+                size="sm"
+                disabled={selectedItems.length === 0}
+              >
+                Add Selected ({selectedItems.length})
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

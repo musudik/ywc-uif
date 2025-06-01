@@ -56,6 +56,7 @@ export interface FormConfigurationData {
   form_type: string;
   version: string;
   description: string;
+  applicantconfig?: string;
   sections: Section[];
   consent_forms: ConsentForm[];
   documents: Document[];
@@ -79,6 +80,8 @@ export interface FormConfigurationList {
   form_type: string;
   version: string;
   description?: string;
+  applicantconfig?: string;
+  sections: any[];
   is_active: boolean;
   usage_count: number;
   last_used_at: string | null;

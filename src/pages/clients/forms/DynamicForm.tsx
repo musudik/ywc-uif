@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useLanguage } from '../../context/LanguageContext';
-import { useNotification } from '../../context/NotificationContext';
-import Button from '../../components/ui/Button';
-import formSubmissionService, { type FormSubmissionData } from '../../services/formSubmissionService';
-import { formService } from '../../services/formService';
-import type { FormConfigurationData } from '../../services/configToolService';
-import type { Section, FormField } from '../../types';
+import { useAuth } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
+import { useNotification } from '../../../context/NotificationContext';
+import Button from '../../../components/ui/Button';
+import formSubmissionService, { type FormSubmissionData } from '../../../services/formSubmissionService';
+import { formService } from '../../../services/formService';
+import type { FormConfigurationData } from '../../../services/configToolService';
+import type { Section, FormField } from '../../../types';
 
 // Dynamic field component
 function DynamicField({ field, value, onChange, disabled }: {
@@ -126,13 +126,10 @@ function DynamicSection({ section, formData, onChange, disabled }: {
   disabled: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const { t } = useLanguage();
 
   const handleFieldChange = (fieldName: string, value: any) => {
-    const newSectionData = {
-      ...formData[section.id] || {},
-      [fieldName]: value
-    };
-    onChange({ [section.id]: newSectionData });
+    onChange({ [fieldName]: value });
   };
 
   // Check if this section should use an existing form component
@@ -141,7 +138,7 @@ function DynamicSection({ section, formData, onChange, disabled }: {
     const sectionData = formData[section.id] || {};
     
     if (title.includes('personal')) {
-      return renderPersonalDetailsFields(sectionData, handleFieldChange, disabled);
+      return renderPersonalDetailsFields(sectionData, handleFieldChange, disabled, t);
     } else if (title.includes('family')) {
       return renderFamilyDetailsFields(sectionData, handleFieldChange, disabled);
     } else if (title.includes('employment')) {
@@ -209,14 +206,14 @@ function DynamicSection({ section, formData, onChange, disabled }: {
 }
 
 // Personal Details Fields Renderer
-function renderPersonalDetailsFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
+function renderPersonalDetailsFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean, t: (key: string) => string) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Salutation
+          {t('forms.dynamic.salutation')}
         </label>
         <input
           type="text"
@@ -230,7 +227,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          First Name <span className="text-red-500">*</span>
+          {t('forms.dynamic.firstName')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -244,7 +241,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Last Name <span className="text-red-500">*</span>
+          {t('forms.dynamic.lastName')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -258,7 +255,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Email <span className="text-red-500">*</span>
+          {t('forms.dynamic.email')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="email"
@@ -272,7 +269,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Phone <span className="text-red-500">*</span>
+          {t('forms.dynamic.phone')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="tel"
@@ -286,7 +283,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Street <span className="text-red-500">*</span>
+          {t('forms.dynamic.street')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -300,7 +297,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          House Number <span className="text-red-500">*</span>
+          {t('forms.dynamic.houseNumber')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -314,7 +311,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Postal Code <span className="text-red-500">*</span>
+          {t('forms.dynamic.postalCode')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -328,7 +325,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          City <span className="text-red-500">*</span>
+          {t('forms.dynamic.city')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -342,7 +339,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Birth Date <span className="text-red-500">*</span>
+          {t('forms.dynamic.birthDate')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="date"
@@ -356,7 +353,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Birth Place <span className="text-red-500">*</span>
+          {t('forms.dynamic.birthPlace')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -370,7 +367,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Nationality <span className="text-red-500">*</span>
+          {t('forms.dynamic.nationality')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -384,7 +381,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Marital Status <span className="text-red-500">*</span>
+          {t('forms.dynamic.maritalStatus')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <select
           value={formData.marital_status || ''}
@@ -393,17 +390,17 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           required
           className={baseClasses}
         >
-          <option value="">Select...</option>
-          <option value="single">Single</option>
-          <option value="married">Married</option>
-          <option value="divorced">Divorced</option>
-          <option value="widowed">Widowed</option>
+          <option value="">{t('forms.dynamic.select')}</option>
+          <option value="single">{t('forms.dynamic.single')}</option>
+          <option value="married">{t('forms.dynamic.married')}</option>
+          <option value="divorced">{t('forms.dynamic.divorced')}</option>
+          <option value="widowed">{t('forms.dynamic.widowed')}</option>
         </select>
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Housing <span className="text-red-500">*</span>
+          {t('forms.dynamic.housing')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <select
           value={formData.housing || ''}
@@ -412,11 +409,11 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           required
           className={baseClasses}
         >
-          <option value="">Select...</option>
-          <option value="owned">Owned</option>
-          <option value="rented">Rented</option>
-          <option value="livingWithParents">Living with Parents</option>
-          <option value="other">Other</option>
+          <option value="">{t('forms.dynamic.select')}</option>
+          <option value="owned">{t('forms.dynamic.owned')}</option>
+          <option value="rented">{t('forms.dynamic.rented')}</option>
+          <option value="livingWithParents">{t('forms.dynamic.livingWithParents')}</option>
+          <option value="other">{t('forms.dynamic.other')}</option>
         </select>
       </div>
 
@@ -429,7 +426,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           className="rounded border-gray-300 dark:border-gray-600"
         />
         <label className="text-sm font-medium text-gray-900 dark:text-white">
-          EU Citizen
+          {t('forms.personalDetails.euCitizen')}
         </label>
       </div>
     </div>
@@ -439,12 +436,13 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 // Income Details Fields Renderer
 function renderIncomeFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const { t } = useLanguage();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Gross Income <span className="text-red-500">*</span>
+          {t('forms.income.grossIncome')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="number"
@@ -454,13 +452,13 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           disabled={disabled}
           required
           className={baseClasses}
-          placeholder="Monthly gross income"
+          placeholder={t('forms.income.monthlyAmount')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Net Income <span className="text-red-500">*</span>
+          {t('forms.income.netIncome')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="number"
@@ -470,13 +468,13 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           disabled={disabled}
           required
           className={baseClasses}
-          placeholder="Monthly net income"
+          placeholder={t('forms.income.monthlyAmount')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Tax Class
+          {t('forms.income.taxClass')}
         </label>
         <input
           type="text"
@@ -489,7 +487,7 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Number of Salaries
+          {t('forms.income.numberOfSalaries')}
         </label>
         <input
           type="number"
@@ -504,7 +502,7 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Child Benefit
+          {t('forms.income.childBenefit')}
         </label>
         <input
           type="number"
@@ -519,7 +517,7 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Other Income
+          {t('forms.income.otherIncome')}
         </label>
         <input
           type="number"
@@ -538,12 +536,13 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
 // Add placeholder renderers for other form types
 function renderFamilyDetailsFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const { t } = useLanguage();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          First Name <span className="text-red-500">*</span>
+          {t('forms.familyDetails.firstNameRequired')}
         </label>
         <input
           type="text"
@@ -557,7 +556,7 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Last Name <span className="text-red-500">*</span>
+          {t('forms.familyDetails.lastNameRequired')}
         </label>
         <input
           type="text"
@@ -571,7 +570,7 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Relation <span className="text-red-500">*</span>
+          {t('forms.familyDetails.relationRequired')}
         </label>
         <select
           value={formData.relation || ''}
@@ -580,17 +579,17 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           required
           className={baseClasses}
         >
-          <option value="">Select...</option>
-          <option value="Spouse">Spouse</option>
-          <option value="Child">Child</option>
-          <option value="Parent">Parent</option>
-          <option value="Other">Other</option>
+          <option value="">{t('forms.dynamic.select')}</option>
+          <option value="Spouse">{t('forms.familyDetails.spouse')}</option>
+          <option value="Child">{t('forms.familyDetails.child')}</option>
+          <option value="Parent">{t('forms.familyDetails.parent')}</option>
+          <option value="Other">{t('forms.dynamic.other')}</option>
         </select>
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Birth Date <span className="text-red-500">*</span>
+          {t('forms.familyDetails.birthDateRequired')}
         </label>
         <input
           type="date"
@@ -604,7 +603,7 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Nationality <span className="text-red-500">*</span>
+          {t('forms.familyDetails.nationalityRequired')}
         </label>
         <input
           type="text"
@@ -621,12 +620,13 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
 
 function renderEmploymentFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const { t } = useLanguage();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Occupation <span className="text-red-500">*</span>
+          {t('forms.employment.occupation')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <input
           type="text"
@@ -640,20 +640,25 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Contract Type
+          {t('forms.employment.contractType')}
         </label>
-        <input
-          type="text"
+        <select
           value={formData.contract_type || ''}
           onChange={(e) => onChange('contract_type', e.target.value)}
           disabled={disabled}
           className={baseClasses}
-        />
+        >
+          <option value="">{t('forms.employment.selectContractType')}</option>
+          <option value="permanent">{t('forms.employment.permanent')}</option>
+          <option value="temporary">{t('forms.employment.temporary')}</option>
+          <option value="freelance">{t('forms.employment.freelance')}</option>
+          <option value="consultant">{t('forms.employment.consultant')}</option>
+        </select>
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Employer Name
+          {t('forms.employment.employerName')}
         </label>
         <input
           type="text"
@@ -666,7 +671,7 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Employed Since
+          {t('forms.employment.employedSince')}
         </label>
         <input
           type="date"
@@ -682,12 +687,13 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
 
 function renderExpensesFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const { t } = useLanguage();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Cold Rent
+          {t('forms.expenses.coldRent')}
         </label>
         <input
           type="number"
@@ -697,12 +703,13 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           onChange={(e) => onChange('cold_rent', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.expenses.monthlyAmount')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Electricity
+          {t('forms.expenses.electricity')}
         </label>
         <input
           type="number"
@@ -712,12 +719,13 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           onChange={(e) => onChange('electricity', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.expenses.monthlyAmount')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Living Expenses
+          {t('forms.expenses.livingExpenses')}
         </label>
         <input
           type="number"
@@ -727,12 +735,45 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           onChange={(e) => onChange('living_expenses', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.expenses.monthlyAmount')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Other Expenses
+          {t('forms.expenses.gas')}
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={formData.gas || ''}
+          onChange={(e) => onChange('gas', parseFloat(e.target.value) || 0)}
+          disabled={disabled}
+          className={baseClasses}
+          placeholder={t('forms.expenses.monthlyAmount')}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
+          {t('forms.expenses.telecommunication')}
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={formData.telecommunication || ''}
+          onChange={(e) => onChange('telecommunication', parseFloat(e.target.value) || 0)}
+          disabled={disabled}
+          className={baseClasses}
+          placeholder={t('forms.expenses.monthlyAmount')}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
+          {t('forms.expenses.otherExpenses')}
         </label>
         <input
           type="number"
@@ -742,6 +783,7 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           onChange={(e) => onChange('other_expenses', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.expenses.monthlyAmount')}
         />
       </div>
     </div>
@@ -750,12 +792,13 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
 
 function renderAssetsFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const { t } = useLanguage();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Real Estate
+          {t('forms.assets.realEstate')}
         </label>
         <input
           type="number"
@@ -765,12 +808,13 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           onChange={(e) => onChange('real_estate', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.assets.currentValue')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Securities
+          {t('forms.assets.securities')}
         </label>
         <input
           type="number"
@@ -780,12 +824,13 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           onChange={(e) => onChange('securities', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.assets.currentValue')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Bank Deposits
+          {t('forms.assets.bankDeposits')}
         </label>
         <input
           type="number"
@@ -795,12 +840,45 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           onChange={(e) => onChange('bank_deposits', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.assets.currentValue')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Other Assets
+          {t('forms.assets.buildingSavings')}
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={formData.building_savings || ''}
+          onChange={(e) => onChange('building_savings', parseFloat(e.target.value) || 0)}
+          disabled={disabled}
+          className={baseClasses}
+          placeholder={t('forms.assets.currentValue')}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
+          {t('forms.assets.insuranceValues')}
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={formData.insurance_values || ''}
+          onChange={(e) => onChange('insurance_values', parseFloat(e.target.value) || 0)}
+          disabled={disabled}
+          className={baseClasses}
+          placeholder={t('forms.assets.currentValue')}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
+          {t('forms.assets.otherAssets')}
         </label>
         <input
           type="number"
@@ -810,6 +888,7 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           onChange={(e) => onChange('other_assets', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.assets.currentValue')}
         />
       </div>
     </div>
@@ -818,12 +897,13 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
 
 function renderLiabilitiesFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const { t } = useLanguage();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Loan Type <span className="text-red-500">*</span>
+          {t('forms.liabilities.loanType')} <span className="text-red-500">{t('forms.dynamic.required')}</span>
         </label>
         <select
           value={formData.loan_type || ''}
@@ -832,19 +912,19 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
           required
           className={baseClasses}
         >
-          <option value="">Select...</option>
-          <option value="PersonalLoan">Personal Loan</option>
-          <option value="HomeLoan">Home Loan</option>
-          <option value="CarLoan">Car Loan</option>
-          <option value="BusinessLoan">Business Loan</option>
-          <option value="EducationLoan">Education Loan</option>
-          <option value="OtherLoan">Other Loan</option>
+          <option value="">{t('forms.liabilities.selectLoanType')}</option>
+          <option value="PersonalLoan">{t('forms.liabilities.personalLoan')}</option>
+          <option value="HomeLoan">{t('forms.liabilities.homeLoan')}</option>
+          <option value="CarLoan">{t('forms.liabilities.carLoan')}</option>
+          <option value="BusinessLoan">{t('forms.liabilities.businessLoan')}</option>
+          <option value="EducationLoan">{t('forms.liabilities.educationLoan')}</option>
+          <option value="OtherLoan">{t('forms.liabilities.otherLoan')}</option>
         </select>
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Loan Bank
+          {t('forms.liabilities.loanBank')}
         </label>
         <input
           type="text"
@@ -857,7 +937,7 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Loan Amount
+          {t('forms.liabilities.loanAmount')}
         </label>
         <input
           type="number"
@@ -867,12 +947,13 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
           onChange={(e) => onChange('loan_amount', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.liabilities.amount')}
         />
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
-          Monthly Rate
+          {t('forms.liabilities.loanMonthlyRate')}
         </label>
         <input
           type="number"
@@ -882,6 +963,23 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
           onChange={(e) => onChange('loan_monthly_rate', parseFloat(e.target.value) || 0)}
           disabled={disabled}
           className={baseClasses}
+          placeholder={t('forms.liabilities.monthlyPayment')}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
+          {t('forms.liabilities.loanInterest')}
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={formData.loan_interest || ''}
+          onChange={(e) => onChange('loan_interest', parseFloat(e.target.value) || 0)}
+          disabled={disabled}
+          className={baseClasses}
+          placeholder={t('forms.liabilities.interestRate')}
         />
       </div>
     </div>
@@ -917,7 +1015,7 @@ export default function DynamicForm() {
         const submissionResponse = await formSubmissionService.getFormSubmission(submissionId);
         if (submissionResponse.success && submissionResponse.data) {
           setSubmission(submissionResponse.data);
-          setFormData(submissionResponse.data.submission_data || {});
+          setFormData(submissionResponse.data.form_data || {});
           setIsViewMode(submissionResponse.data.status !== 'draft');
 
           // Load form configuration
@@ -927,6 +1025,7 @@ export default function DynamicForm() {
           }
         } else {
           showError('Error', 'Failed to load form submission');
+          showError(t('common.error'), t('forms.dynamic.loadError'));
           navigate('/dashboard/forms');
         }
       } else if (configId) {
@@ -941,12 +1040,14 @@ export default function DynamicForm() {
           setIsViewMode(false);
         } else {
           showError('Error', 'Failed to load form configuration');
+          showError(t('common.error'), t('forms.dynamic.loadError'));
           navigate('/dashboard/forms');
         }
       }
     } catch (error) {
       console.error('Error loading form data:', error);
       showError('Error', 'Failed to load form data');
+      showError(t('common.error'), t('forms.dynamic.loadError'));
       navigate('/dashboard/forms');
     } finally {
       setLoading(false);
@@ -1188,8 +1289,11 @@ export default function DynamicForm() {
         user_id: user.id,
         form_data: formData,
         status: asSubmitted ? 'submitted' : 'draft',
-        submitted_at: asSubmitted ? new Date().toISOString() : undefined
       };
+      
+      if (asSubmitted) {
+        submissionData.submitted_at = new Date();
+      }
 
       let response;
       if (submission?.id) {
@@ -1202,6 +1306,7 @@ export default function DynamicForm() {
 
       if (response.success) {
         showSuccess('Success', asSubmitted ? 'Form submitted successfully!' : 'Form saved as draft');
+        showSuccess(t('common.success'), asSubmitted ? t('forms.dynamic.submitSuccess') : t('forms.dynamic.saveSuccess'));
         if (response.data) {
           setSubmission(response.data);
           if (asSubmitted) {
@@ -1210,10 +1315,12 @@ export default function DynamicForm() {
         }
       } else {
         showError('Error', response.message || 'Failed to save form');
+        showError(t('common.error'), response.message || t('forms.dynamic.submitError'));
       }
     } catch (error) {
       console.error('Error saving form:', error);
       showError('Error', 'Failed to save form');
+      showError(t('common.error'), t('forms.dynamic.submitError'));
     } finally {
       setSaving(false);
     }
@@ -1234,6 +1341,7 @@ export default function DynamicForm() {
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             <span className="ml-3 text-gray-600 dark:text-gray-400">Loading form...</span>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">{t('forms.dynamic.loadingForm')}</span>
           </div>
         </div>
       </div>
@@ -1246,6 +1354,7 @@ export default function DynamicForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
           <div className="p-6 text-center text-gray-500 dark:text-gray-400">
             Form configuration not found
+            {t('forms.dynamic.formNotFound')}
           </div>
         </div>
       </div>
@@ -1255,6 +1364,17 @@ export default function DynamicForm() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
+      <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => navigate('/dashboard/forms')}>
+              ← {t('forms.list.backToForms')}
+          </Button>
+          {isViewMode && submission?.status === 'draft' && (
+            <Button variant="outline" onClick={handleEdit}>
+              Edit
+              {t('forms.dynamic.editForm')}
+            </Button>
+          )}
+      </div>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
         <div className="flex items-center justify-between">
           <div>
@@ -1283,16 +1403,7 @@ export default function DynamicForm() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => navigate('/dashboard/forms')}>
-              ← Back to Forms
-            </Button>
-            {isViewMode && submission?.status === 'draft' && (
-              <Button variant="outline" onClick={handleEdit}>
-                Edit
-              </Button>
-            )}
-          </div>
+          
         </div>
       </div>
 
@@ -1312,34 +1423,36 @@ export default function DynamicForm() {
       </div>
 
       {/* Consent Form */}
-      {formConfig.consent_form?.enabled && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
-          <div className="border-b border-gray-200 dark:border-gray-600 p-4">
-            <h3 className="font-semibold text-gray-900 dark:text-white">
-              {formConfig.consent_form.title}
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="prose dark:prose-invert max-w-none">
-              <p className="whitespace-pre-wrap">{formConfig.consent_form.content}</p>
-            </div>
-            {!isViewMode && (
-              <div className="mt-4">
-                <label className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    checked={formData.consent_agreed || false}
-                    onChange={(e) => handleSectionChange({ consent_agreed: e.target.checked })}
-                    required={formConfig.consent_form.required}
-                    className="rounded border-gray-300 dark:border-gray-600"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {formConfig.consent_form.checkboxText}
-                    {formConfig.consent_form.required && <span className="text-red-500 ml-1">*</span>}
-                  </span>
-                </label>
+      {formConfig.consent_forms && formConfig.consent_forms.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+          <div className="space-y-6">
+            {formConfig.consent_forms.map((consentForm, index) => (
+              <div key={index}>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  {consentForm.title}
+                </h2>
+                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border max-h-60 overflow-y-auto">
+                  <p className="whitespace-pre-wrap">{consentForm.content}</p>
+                </div>
+                {!isViewMode && (
+                  <div className="mt-4">
+                    <label className="flex items-start space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={formData[`consent_${index}`] || false}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [`consent_${index}`]: e.target.checked }))}
+                        required={consentForm.required}
+                        className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {consentForm.checkboxText}
+                        {consentForm.required && <span className="text-red-500 ml-1">*</span>}
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
         </div>
       )}
@@ -1349,7 +1462,7 @@ export default function DynamicForm() {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {submission?.id ? 'Last saved: ' + new Date(submission.updated_at || '').toLocaleString() : 'Not saved yet'}
+              {submission?.id ? t('forms.dynamic.lastSaved') + ' ' + new Date(submission.updated_at || '').toLocaleString() : t('forms.dynamic.notSavedYet')}
             </div>
             <div className="flex items-center gap-3">
               <Button
@@ -1357,13 +1470,13 @@ export default function DynamicForm() {
                 onClick={() => handleSave(false)}
                 disabled={saving}
               >
-                {saving ? 'Saving...' : 'Save Draft'}
+                {saving ? t('forms.dynamic.saving') : t('forms.dynamic.saveDraft')}
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={saving}
               >
-                {saving ? 'Submitting...' : 'Submit Form'}
+                {saving ? t('forms.dynamic.submitting') : t('forms.dynamic.submitForm')}
               </Button>
             </div>
           </div>

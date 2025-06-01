@@ -16,23 +16,39 @@
     "no": "No",
     "required": "Required",
     "completed": "Completed",
-    "getStarted": "Get Started"
+    "getStarted": "Get Started",
+    "appName": "Your Wealth Coach",
+    "appDescription": "Professional Financial Coaching & Wealth Management Platform",
+    "toggleTheme": "Toggle theme",
+    "footer": {
+      "copyright": "© {year} {company}. All rights reserved."
+    }
   },
   "auth": {
     "login": "Login",
     "logout": "Logout",
+    "signOut": "Sign Out",
     "email": "Email",
     "password": "Password",
     "welcomeBack": "Welcome back!",
-    "signIn": "Sign in to your account"
+    "signIn": "Sign in to your account",
+    "platformSubtitle": "Financial Coaching Platform",
+    "features": {
+      "roleBased": "Role-Based",
+      "accessControl": "Access Control",
+      "secure": "Secure",
+      "dataManagement": "Data Management",
+      "financial": "Financial",
+      "analytics": "Analytics"
+    }
   },
   "navigation": {
     "dashboard": "Dashboard",
     "clients": "Clients",
     "coaches": "Coaches",
     "forms": "Forms",
-    "profile": "Profile",
-    "settings": "Settings"
+    "profile": "My Profile",
+    "settings": "Account Settings"
   },
   "dashboard": {
     "admin": {
@@ -108,6 +124,76 @@
     }
   },
   "forms": {
+    "list": {
+      "title": "Available Forms",
+      "subtitle": "Fill out forms and track your submissions",
+      "loadingForms": "Loading forms...",
+      "formsAvailable": "forms available",
+      "submissions": "submissions",
+      "availableForms": "Available Forms",
+      "noForms": "No forms available",
+      "noFormsMessage": "Contact your administrator to configure forms",
+      "status": "Status:",
+      "view": "View",
+      "continue": "Continue",
+      "fillForm": "Fill Form",
+      "mySubmissions": "My Submissions",
+      "formSubmission": "Form Submission",
+      "created": "Created:",
+      "submitted": "Submitted:",
+      "sections": "sections",
+      "jointApplication": "Joint Application",
+      "backToForms": "Back to Forms",
+      "applicant1": "Applicant 1",
+      "applicant2": "Applicant 2",
+      "primaryApplicant": "Primary applicant information",
+      "secondaryApplicant": "Secondary applicant information"
+    },
+    "dynamic": {
+      "loadingForm": "Loading form...",
+      "formNotFound": "Form configuration not found",
+      "saveDraft": "Save Draft",
+      "submitForm": "Submit Form",
+      "saving": "Saving...",
+      "submitting": "Submitting...",
+      "lastSaved": "Last saved:",
+      "notSavedYet": "Not saved yet",
+      "editForm": "Edit Form",
+      "salutation": "Salutation",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone",
+      "street": "Street",
+      "houseNumber": "House Number",
+      "postalCode": "Postal Code",
+      "city": "City",
+      "birthDate": "Birth Date",
+      "birthPlace": "Birth Place",
+      "nationality": "Nationality",
+      "maritalStatus": "Marital Status",
+      "housing": "Housing",
+      "select": "Select...",
+      "single": "Single",
+      "married": "Married",
+      "divorced": "Divorced",
+      "widowed": "Widowed",
+      "owned": "Owned",
+      "rented": "Rented",
+      "livingWithParents": "Living with Parents",
+      "other": "Other",
+      "required": "*",
+      "submitSuccess": "Form submitted successfully!",
+      "saveSuccess": "Form saved as draft",
+      "submitError": "Failed to save form",
+      "loadError": "Failed to load form data"
+    },
+    "dual": {
+      "formNotFoundTitle": "Form Not Found",
+      "formNotFoundMessage": "The requested form configuration could not be found.",
+      "saveAsDraft": "Save as Draft",
+      "jointApplication": "Joint Application"
+    },
     "personalDetails": {
       "title": "Personal Details",
       "subtitle": "Provide your basic personal and contact information",

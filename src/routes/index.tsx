@@ -26,8 +26,9 @@ import AssetsForm from '../pages/forms/AssetsForm';
 import LiabilitiesForm from '../pages/forms/LiabilitiesForm';
 
 // Dynamic Form Pages
-import FormsList from '../pages/client/FormsList';
-import DynamicForm from '../pages/client/DynamicForm';
+import FormsList from '../pages/clients/forms/FormsList';
+import DynamicForm from '../pages/clients/forms/DynamicForm';
+import DualApplicantForm from '../pages/clients/forms/DualApplicantForm';
 
 // Client Management (Coach/Admin)
 import ClientManagement from '../pages/clients/ClientManagement';
@@ -197,6 +198,23 @@ export const router = createBrowserRouter([
                 element: (
                   <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
                     <DynamicForm />
+                  </RoleGuard>
+                ),
+              },
+              // Dual Applicant Form Routes
+              {
+                path: 'dual-applicant/new/:configId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DualApplicantForm />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'dual-applicant/:submissionId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DualApplicantForm />
                   </RoleGuard>
                 ),
               },
@@ -552,35 +570,7 @@ export const getNavigationItems = (userRole: UserRole): NavigationItem[] => {
             path: '/dashboard/forms',
             icon: 'document-text',
             roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'self-disclosure',
-            label: 'Self Disclosure',
-            path: '/dashboard/forms/self-disclosure',
-            icon: 'user-circle',
-            roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'loans',
-            label: 'Loans',
-            path: '/dashboard/forms/loans',
-            icon: 'calendar',
-            roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'insurance',
-            label: 'Insurance',
-            path: '/dashboard/forms/insurance',
-            icon: 'chart-line',
-            roles: [UserRole.CLIENT],
-          },
-          {
-            id: 'taxes',
-            label: 'Taxes',
-            path: '/dashboard/forms/taxes',
-            icon: 'chart-line',
-            roles: [UserRole.CLIENT],
-          },
+          }
         ],
       },
     ],

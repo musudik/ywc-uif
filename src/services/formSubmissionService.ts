@@ -1,6 +1,7 @@
 import type { ApiResponse } from '../types';
 import { apiService } from './api';
-import type { FormConfigurationData } from './configToolService';
+import type { FormConfigurationData, FormConfigurationList } from './configToolService';
+import configToolService from './configToolService';
 
 export type FormSubmissionStatus = 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
 
@@ -38,9 +39,10 @@ class FormSubmissionService {
   /**
    * Get available form configurations for clients
    */
-  async getAvailableFormConfigurations(): Promise<ApiResponse<FormConfigurationData[]>> {
+  async getAvailableFormConfigurations(): Promise<ApiResponse<FormConfigurationList[]>> {
     try {
-      return await apiService.get<FormConfigurationData[]>('/form-configurations');
+      // Use configToolService to get configurations with applicantConfig field
+      return await configToolService.getFormConfigurations({ isActive: true });
     } catch (error) {
       console.error('Error fetching available form configurations:', error);
       return {

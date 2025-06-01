@@ -1,6 +1,6 @@
 {
   "common": {
-    "loading": "Lädt...",
+    "loading": "Laden...",
     "save": "Speichern",
     "cancel": "Abbrechen",
     "edit": "Bearbeiten",
@@ -9,30 +9,46 @@
     "update": "Aktualisieren",
     "create": "Erstellen",
     "back": "Zurück",
-    "continue": "Fortsetzen",
+    "continue": "Weiter",
     "search": "Suchen",
-    "view": "Anzeigen",
+    "view": "Ansehen",
     "yes": "Ja",
     "no": "Nein",
     "required": "Erforderlich",
     "completed": "Abgeschlossen",
-    "getStarted": "Loslegen"
+    "getStarted": "Loslegen",
+    "appName": "Your Wealth Coach",
+    "appDescription": "Professionelle Finanzberatung & Vermögensverwaltungsplattform",
+    "toggleTheme": "Design wechseln",
+    "footer": {
+      "copyright": "© {year} {company}. Alle Rechte vorbehalten."
+    }
   },
   "auth": {
     "login": "Anmelden",
     "logout": "Abmelden",
+    "signOut": "Abmelden",
     "email": "E-Mail",
     "password": "Passwort",
     "welcomeBack": "Willkommen zurück!",
-    "signIn": "Bei Ihrem Konto anmelden"
+    "signIn": "Melden Sie sich in Ihrem Konto an",
+    "platformSubtitle": "Finanzberatungsplattform",
+    "features": {
+      "roleBased": "Rollenbasiert",
+      "accessControl": "Zugriffskontrolle",
+      "secure": "Sicher",
+      "dataManagement": "Datenverwaltung",
+      "financial": "Finanziell",
+      "analytics": "Analytik"
+    }
   },
   "navigation": {
     "dashboard": "Dashboard",
-    "clients": "Kunden",
-    "coaches": "Trainer",
+    "clients": "Klienten",
+    "coaches": "Coaches",
     "forms": "Formulare",
-    "profile": "Profil",
-    "settings": "Einstellungen"
+    "profile": "Mein Profil",
+    "settings": "Kontoeinstellungen"
   },
   "dashboard": {
     "admin": {
@@ -108,6 +124,76 @@
     }
   },
   "forms": {
+    "list": {
+      "title": "Verfügbare Formulare",
+      "subtitle": "Formulare ausfüllen und Einreichungen verfolgen",
+      "loadingForms": "Formulare werden geladen...",
+      "formsAvailable": "Formulare verfügbar",
+      "submissions": "Einreichungen",
+      "availableForms": "Verfügbare Formulare",
+      "noForms": "Keine Formulare verfügbar",
+      "noFormsMessage": "Wenden Sie sich an Ihren Administrator, um Formulare zu konfigurieren",
+      "status": "Status:",
+      "view": "Anzeigen",
+      "continue": "Fortfahren",
+      "fillForm": "Formular ausfüllen",
+      "mySubmissions": "Meine Einreichungen",
+      "formSubmission": "Formulareinreichung",
+      "created": "Erstellt:",
+      "submitted": "Eingereicht:",
+      "sections": "Abschnitte",
+      "jointApplication": "Gemeinsame Anwendung",
+      "backToForms": "Zurück zu Formularen",
+      "applicant1": "Antragsteller 1",
+      "applicant2": "Antragsteller 2",
+      "primaryApplicant": "Informationen des Hauptantragstellers",
+      "secondaryApplicant": "Informationen des Zweitantragstellers"
+    },
+    "dynamic": {
+      "loadingForm": "Formular wird geladen...",
+      "formNotFound": "Formularkonfiguration nicht gefunden",
+      "saveDraft": "Entwurf speichern",
+      "submitForm": "Formular einreichen",
+      "saving": "Speichern...",
+      "submitting": "Einreichen...",
+      "lastSaved": "Zuletzt gespeichert:",
+      "notSavedYet": "Noch nicht gespeichert",
+      "editForm": "Formular bearbeiten",
+      "salutation": "Anrede",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "street": "Straße",
+      "houseNumber": "Hausnummer",
+      "postalCode": "Postleitzahl",
+      "city": "Stadt",
+      "birthDate": "Geburtsdatum",
+      "birthPlace": "Geburtsort",
+      "nationality": "Nationalität",
+      "maritalStatus": "Familienstand",
+      "housing": "Wohnsituation",
+      "select": "Auswählen...",
+      "single": "Ledig",
+      "married": "Verheiratet",
+      "divorced": "Geschieden",
+      "widowed": "Verwitwet",
+      "owned": "Eigentum",
+      "rented": "Gemietet",
+      "livingWithParents": "Bei den Eltern wohnend",
+      "other": "Andere",
+      "required": "*",
+      "submitSuccess": "Formular erfolgreich eingereicht!",
+      "saveSuccess": "Formular als Entwurf gespeichert",
+      "submitError": "Fehler beim Speichern des Formulars",
+      "loadError": "Fehler beim Laden der Formulardaten"
+    },
+    "dual": {
+      "formNotFoundTitle": "Formular nicht gefunden",
+      "formNotFoundMessage": "Die angeforderte Formularkonfiguration konnte nicht gefunden werden.",
+      "saveAsDraft": "Als Entwurf speichern",
+      "jointApplication": "Gemeinsame Anwendung"
+    },
     "personalDetails": {
       "title": "Persönliche Daten",
       "subtitle": "Geben Sie Ihre grundlegenden persönlichen und Kontaktinformationen an",
