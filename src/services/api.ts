@@ -10,7 +10,7 @@ class ApiService {
   constructor() {
     this.client = axios.create({
       baseURL: API_CONFIG.BASE_URL,
-      timeout: API_CONFIG.TIMEOUT,
+      timeout: API_CONFIG.TIMEOUT || 30000, // Increase default timeout for mobile
       headers: {
         'Content-Type': 'application/json',
       },
@@ -35,12 +35,24 @@ class ApiService {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
+        // Handle network errors specifically
+        if (!error.response) {
+          // Network error (no response received)
+          const networkError = new Error('Network connection failed. Please check your internet connection and try again.');
+          networkError.name = 'NetworkError';
+          return Promise.reject(networkError);
+        }
+        
         if (error.response?.status === 401) {
           // Token expired or invalid
           this.clearToken();
           window.location.href = '/auth/login';
         }
-        return Promise.reject(error);
+        
+        // Handle other HTTP errors
+        const httpError = new Error(error.response?.data?.message || `HTTP ${error.response?.status}: ${error.response?.statusText}`);
+        httpError.name = 'HTTPError';
+        return Promise.reject(httpError);
       }
     );
   }

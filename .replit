@@ -19,4 +19,16 @@ start = "typescript-language-server --stdio"
 [[ports]]
 localPort = 5173
 externalPort = 80
+
+[workflows]
+runButton = "Mobile Dev Server"
+
+[[workflows.workflow]]
+name = "Mobile Dev Server"
+author = 36293822
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev -- --host 0.0.0.0"
  

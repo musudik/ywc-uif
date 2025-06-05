@@ -24,15 +24,25 @@ export interface RegisterRequest {
 export class AuthService {
   // Login user
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await apiService.post<LoginResponse>('/auth/login', credentials);
-    
-    if (response.success && response.data) {
-      // Set token in API service
-      apiService.setToken(response.data.token);
-      return response.data;
+    try {
+      const response = await apiService.post<LoginResponse>('/auth/login', credentials);
+      
+      if (response.success && response.data) {
+        // Set token in API service
+        apiService.setToken(response.data.token);
+        return response.data;
+      }
+      
+      throw new Error(response.message || 'Login failed');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'NetworkError') {
+          throw new Error('Unable to connect to server. Please check your internet connection and try again.');
+        }
+        throw error;
+      }
+      throw new Error('An unexpected error occurred during login');
     }
-    
-    throw new Error(response.message || 'Login failed');
   }
 
   // Register new user (Admin can create Coach/Admin accounts, Coach can create Client accounts)

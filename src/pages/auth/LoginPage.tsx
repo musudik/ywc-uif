@@ -17,7 +17,7 @@ export default function LoginPage() {
 
   const from = location.state?.from?.pathname || '/dashboard';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, retryCount = 0) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -31,7 +31,18 @@ export default function LoginPage() {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (error) {
-      showError('Login Failed', error instanceof Error ? error.message : 'Invalid credentials');
+      const errorMessage = error instanceof Error ? error.message : 'Invalid credentials';
+      
+      // Retry network errors once
+      if (error instanceof Error && error.message.includes('Network connection failed') && retryCount === 0) {
+        console.log('Retrying login due to network error...');
+        setTimeout(() => {
+          handleSubmit(e, 1);
+        }, 2000);
+        return;
+      }
+      
+      showError('Login Failed', errorMessage);
     } finally {
       setLoading(false);
     }
