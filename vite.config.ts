@@ -1,27 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-// https://vite.dev/config/
+// Replit assigns PORT automatically — use that.
+const PORT = process.env.PORT || 3000;
+
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0', // Bind to all interfaces for Replit
-    port: 5173,
-    allowedHosts: [
-      'your-wealth-coach.replit.app',
-      '.replit.app', // Allow all Replit subdomains
-      'localhost',
-      '127.0.0.1'
-    ]
+    host: "0.0.0.0", // Required for public access
+    port: PORT, // Use Replit-assigned or fallback port
+    strictPort: true, // Fail fast if port is taken
   },
   preview: {
-    host: '0.0.0.0', // Bind to all interfaces for Replit deployment
-    port: 5173, // Use same port for consistency
-    allowedHosts: [
-      'your-wealth-coach.replit.app',
-      '.replit.app', // Allow all Replit subdomains
-      'localhost',
-      '127.0.0.1'
-    ]
-  }
-})
+    host: "0.0.0.0",
+    port: PORT,
+    strictPort: true,
+  },
+});

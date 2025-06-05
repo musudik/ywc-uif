@@ -17,6 +17,10 @@ syntax = "javascript"
 start = "typescript-language-server --stdio"
 
 [[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
 localPort = 5173
 externalPort = 80
 
@@ -30,5 +34,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev -- --host 0.0.0.0"
- 
+args = "npm run dev"
