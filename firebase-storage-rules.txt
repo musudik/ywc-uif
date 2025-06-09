@@ -1,0 +1,26 @@
+// Firebase Storage Rules for Development
+// Copy this to Firebase Console > Storage > Rules
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow all read/write operations for development
+    // IMPORTANT: Change this for production!
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+    
+    // Production rules (uncomment and modify for production use):
+    // match /{allPaths=**} {
+    //   allow read, write: if request.auth != null;
+    // }
+    
+    // More specific rules for coach-client structure (for production):
+    // match /coaches/{coachId}/clients/{clientId}/{allPaths=**} {
+    //   allow read, write: if request.auth != null && 
+    //     (request.auth.uid == coachId || 
+    //      request.auth.uid == clientId ||
+    //      request.auth.token.role == 'ADMIN');
+    // }
+  }
+} 

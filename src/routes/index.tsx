@@ -29,6 +29,8 @@ import LiabilitiesForm from '../pages/forms/LiabilitiesForm';
 import FormsList from '../pages/clients/forms/FormsList';
 import DynamicForm from '../pages/clients/forms/DynamicForm';
 import DualApplicantForm from '../pages/clients/forms/DualApplicantForm';
+import DocumentUploadSingle from '../pages/clients/forms/DocumentUploadSingle';
+import DocumentUploadDual from '../pages/clients/forms/DocumentUploadDual';
 
 // Client Management (Coach/Admin)
 import ClientManagement from '../pages/clients/ClientManagement';
@@ -201,6 +203,15 @@ export const router = createBrowserRouter([
                   </RoleGuard>
                 ),
               },
+              // Edit routes for dynamic forms
+              {
+                path: 'dynamic/edit/:submissionId/:configId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DynamicForm />
+                  </RoleGuard>
+                ),
+              },
               // Dual Applicant Form Routes
               {
                 path: 'dual-applicant/new/:configId',
@@ -215,6 +226,48 @@ export const router = createBrowserRouter([
                 element: (
                   <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
                     <DualApplicantForm />
+                  </RoleGuard>
+                ),
+              },
+              // Edit routes for dual applicant forms
+              {
+                path: 'dual-applicant/edit/:submissionId/:configId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DualApplicantForm />
+                  </RoleGuard>
+                ),
+              },
+              // Document Upload Routes
+              {
+                path: 'documents/single/:submissionId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DocumentUploadSingle />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'documents/single/new',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DocumentUploadSingle />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'documents/dual/:submissionId',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DocumentUploadDual />
+                  </RoleGuard>
+                ),
+              },
+              {
+                path: 'documents/dual/new',
+                element: (
+                  <RoleGuard allowedRoles={[UserRole.CLIENT, UserRole.COACH, UserRole.ADMIN]}>
+                    <DocumentUploadDual />
                   </RoleGuard>
                 ),
               },

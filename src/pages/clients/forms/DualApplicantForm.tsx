@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNotification } from '../../../context/NotificationContext';
@@ -32,6 +32,7 @@ export default function DualApplicantForm() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,7 +40,6 @@ export default function DualApplicantForm() {
   const [submission, setSubmission] = useState<FormSubmissionData | null>(null);
   const [applicant1Data, setApplicant1Data] = useState<ApplicantData>({});
   const [applicant2Data, setApplicant2Data] = useState<ApplicantData>({});
-  const [isViewMode, setIsViewMode] = useState(false);
 
   useEffect(() => {
     loadFormData();
@@ -50,7 +50,7 @@ export default function DualApplicantForm() {
 
     try {
       setLoading(true);
-
+      
       if (submissionId && submissionId !== 'new') {
         // Load existing submission
         const submissionResponse = await formSubmissionService.getFormSubmission(submissionId);
@@ -61,18 +61,23 @@ export default function DualApplicantForm() {
           const submissionData = submissionResponse.data.form_data || {};
           setApplicant1Data(submissionData.applicant1 || {});
           setApplicant2Data(submissionData.applicant2 || {});
-          setIsViewMode(submissionResponse.data.status !== 'draft');
 
+          console.log('Loading config for existing dual submission, form_config_id:', submissionResponse.data.form_config_id);
           // Load form configuration
           const configResponse = await formSubmissionService.getFormConfiguration(submissionResponse.data.form_config_id);
           if (configResponse.success && configResponse.data) {
             setFormConfig(configResponse.data);
+          } else {
+            console.error('Failed to load form configuration:', configResponse.message);
+            showError(t('common.error'), `${t('forms.dynamic.loadError')}: ${configResponse.message || 'Configuration not found'}`);
+            navigate('/dashboard/forms');
           }
         } else {
           showError(t('common.error'), t('forms.dynamic.loadError'));
           navigate('/dashboard/forms');
         }
       } else if (configId) {
+        console.log('Loading config for new dual submission, configId:', configId);
         // Create new submission
         const configResponse = await formSubmissionService.getFormConfiguration(configId);
         if (configResponse.success && configResponse.data) {
@@ -82,9 +87,9 @@ export default function DualApplicantForm() {
           const prefilledData = await loadClientData(configResponse.data);
           setApplicant1Data(prefilledData);
           setApplicant2Data({});
-          setIsViewMode(false);
         } else {
-          showError(t('common.error'), t('forms.dynamic.loadError'));
+          console.error('Failed to load form configuration:', configResponse.message);
+          showError(t('common.error'), `${t('forms.dynamic.loadError')}: ${configResponse.message || 'Configuration not found'}`);
           navigate('/dashboard/forms');
         }
       }
@@ -162,13 +167,17 @@ export default function DualApplicantForm() {
     try {
       setSaving(true);
 
+      // Ensure we're using config_id consistently
+      const configIdToStore = formConfig.config_id || configId;
+      console.log('🔧 Dual form: Saving form with config_id:', configIdToStore);
+
       const formData = {
         applicant1: applicant1Data,
         applicant2: applicant2Data,
       };
 
       if (submission?.id) {
-        // Update existing submission
+        // Update existing submission (normal edit mode)
         const updateData: Partial<FormSubmissionData> = {
           form_data: formData,
           status: asSubmitted ? 'submitted' : 'draft',
@@ -181,10 +190,16 @@ export default function DualApplicantForm() {
         const response = await formSubmissionService.updateFormSubmission(submission.id, updateData);
 
         if (response.success) {
-          showSuccess('Success', asSubmitted ? 'Form submitted successfully!' : 'Form saved as draft');
           showSuccess(t('common.success'), asSubmitted ? t('forms.dynamic.submitSuccess') : t('forms.dynamic.saveSuccess'));
           if (asSubmitted) {
-            navigate('/dashboard/forms');
+            // Navigate to document upload page after successful submission
+            const submissionId = submission?.id;
+            if (submissionId && formConfig?.documents && formConfig.documents.length > 0) {
+              navigate(`/dashboard/forms/documents/dual/${submissionId}`);
+            } else {
+              // No documents to upload, go back to forms list
+              navigate('/dashboard/forms');
+            }
           }
         } else {
           showError(t('common.error'), response.message || t('forms.dynamic.submitError'));
@@ -192,7 +207,7 @@ export default function DualApplicantForm() {
       } else {
         // Create new submission
         const createData: Omit<FormSubmissionData, 'id' | 'created_at' | 'updated_at'> = {
-          form_config_id: configId!,
+          form_config_id: configIdToStore!,
           user_id: user.id,
           form_data: formData,
           status: asSubmitted ? 'submitted' : 'draft',
@@ -206,10 +221,17 @@ export default function DualApplicantForm() {
 
         if (response.success && response.data) {
           setSubmission(response.data);
-          showSuccess('Success', asSubmitted ? 'Form submitted successfully!' : 'Form saved as draft');
+          console.log('Saved dual submission with form_config_id:', response.data.form_config_id);
           showSuccess(t('common.success'), asSubmitted ? t('forms.dynamic.submitSuccess') : t('forms.dynamic.saveSuccess'));
           if (asSubmitted) {
-            navigate('/dashboard/forms');
+            // Navigate to document upload page after successful submission
+            const submissionId = response.data.id;
+            if (submissionId && formConfig?.documents && formConfig.documents.length > 0) {
+              navigate(`/dashboard/forms/documents/dual/${submissionId}`);
+            } else {
+              // No documents to upload, go back to forms list
+              navigate('/dashboard/forms');
+            }
           }
         } else {
           showError(t('common.error'), response.message || t('forms.dynamic.submitError'));
@@ -225,10 +247,6 @@ export default function DualApplicantForm() {
 
   const handleSubmit = () => {
     handleSave(true);
-  };
-
-  const handleEdit = () => {
-    setIsViewMode(false);
   };
 
   if (loading) {
@@ -267,11 +285,6 @@ export default function DualApplicantForm() {
         <Button variant="outline" onClick={() => navigate('/dashboard/forms')}>
           ← {t('forms.list.backToForms')}
         </Button>
-        {isViewMode && submission?.status === 'draft' && (
-          <Button onClick={handleEdit}>
-            {t('forms.dynamic.editForm')}
-          </Button>
-        )}
       </div>
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
@@ -292,17 +305,6 @@ export default function DualApplicantForm() {
                 <span className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 px-2 py-1 rounded text-sm">
                   v{formConfig.version}
                 </span>
-                {submission && (
-                  <span className={`px-2 py-1 rounded text-sm font-medium ${
-                    submission.status === 'draft' 
-                      ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-                      : submission.status === 'submitted'
-                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 blue-text-blue-400'
-                      : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                  }`}>
-                    {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -331,7 +333,6 @@ export default function DualApplicantForm() {
                   section={section}
                   formData={applicant1Data}
                   onChange={handleApplicant1Change}
-                  disabled={isViewMode}
                   applicantLabel="Applicant 1"
                 />
               ))}
@@ -354,7 +355,6 @@ export default function DualApplicantForm() {
                   section={section}
                   formData={applicant2Data}
                   onChange={handleApplicant2Change}
-                  disabled={isViewMode}
                   applicantLabel="Applicant 2"
                 />
               ))}
@@ -362,24 +362,22 @@ export default function DualApplicantForm() {
           </div>
 
           {/* Action Buttons */}
-          {!isViewMode && (
-            <div className="flex justify-end gap-4 pt-8 border-t border-gray-200 dark:border-gray-600 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => handleSave(false)}
-                disabled={saving}
-              >
-                {t('forms.dual.saveAsDraft')}
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={saving}
-              >
-                <SaveIcon className="w-4 h-4 mr-2" />
-                {saving ? t('forms.dynamic.submitting') : t('forms.dynamic.submitForm')}
-              </Button>
-            </div>
-          )}
+          <div className="flex justify-end gap-4 pt-8 border-t border-gray-200 dark:border-gray-600 mt-8">
+            <Button
+              variant="outline"
+              onClick={() => handleSave(false)}
+              disabled={saving}
+            >
+              {t('forms.dual.saveAsDraft')}
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={saving}
+            >
+              <SaveIcon className="w-4 h-4 mr-2" />
+              {saving ? t('forms.dynamic.submitting') : t('forms.dynamic.submitForm')}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -391,11 +389,10 @@ interface DualApplicantSectionProps {
   section: Section;
   formData: ApplicantData;
   onChange: (sectionData: ApplicantData) => void;
-  disabled: boolean;
   applicantLabel: string;
 }
 
-function DualApplicantSection({ section, formData, onChange, disabled, applicantLabel }: DualApplicantSectionProps) {
+function DualApplicantSection({ section, formData, onChange, applicantLabel }: DualApplicantSectionProps) {
   const { t } = useLanguage();
 
   const handleFieldChange = (fieldName: string, value: any) => {
@@ -504,7 +501,6 @@ function DualApplicantSection({ section, formData, onChange, disabled, applicant
             field={field}
             value={formData[field.name] || ''}
             onChange={handleFieldChange}
-            disabled={disabled}
             translatedLabel={getTranslatedFieldLabel(field, section.title)}
           />
         ))}
@@ -518,11 +514,10 @@ interface DualApplicantFieldProps {
   field: FormField;
   value: any;
   onChange: (name: string, value: any) => void;
-  disabled: boolean;
   translatedLabel: string;
 }
 
-function DualApplicantField({ field, value, onChange, disabled, translatedLabel }: DualApplicantFieldProps) {
+function DualApplicantField({ field, value, onChange, translatedLabel }: DualApplicantFieldProps) {
   const { t } = useLanguage();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -532,9 +527,7 @@ function DualApplicantField({ field, value, onChange, disabled, translatedLabel 
     onChange(field.name, newValue);
   };
 
-  const inputClasses = `w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    disabled ? 'bg-gray-50 dark:bg-gray-800 cursor-not-allowed' : ''
-  }`;
+  const inputClasses = `w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`;
 
   const getSelectOptions = (fieldName: string) => {
     switch (fieldName.toLowerCase()) {
@@ -593,8 +586,6 @@ function DualApplicantField({ field, value, onChange, disabled, translatedLabel 
           <select
             value={value}
             onChange={handleChange}
-            disabled={disabled}
-            required={field.required}
             className={inputClasses}
           >
             {options.map((option) => (
@@ -610,10 +601,7 @@ function DualApplicantField({ field, value, onChange, disabled, translatedLabel 
           <textarea
             value={value}
             onChange={handleChange}
-            disabled={disabled}
-            required={field.required}
-            placeholder={field.placeholder}
-            className={`${inputClasses} resize-none`}
+            className={inputClasses}
             rows={3}
           />
         );
@@ -625,7 +613,6 @@ function DualApplicantField({ field, value, onChange, disabled, translatedLabel 
               type="checkbox"
               checked={!!value}
               onChange={handleChange}
-              disabled={disabled}
               className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-900 dark:text-white">
@@ -641,9 +628,6 @@ function DualApplicantField({ field, value, onChange, disabled, translatedLabel 
             type={field.type}
             value={value}
             onChange={handleChange}
-            disabled={disabled}
-            required={field.required}
-            placeholder={field.placeholder}
             className={inputClasses}
           />
         );
