@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNotification } from '../../../context/NotificationContext';
 import Button from '../../../components/ui/Button';
+import { SignaturePad } from '../../../components/util';
 import formSubmissionService, { type FormSubmissionData } from '../../../services/formSubmissionService';
+import { PDFExporter, extractFormSections } from '../../../utils/pdfExport';
+import { createTranslationFunction } from '../../../utils/translations';
 import { formService } from '../../../services/formService';
 import type { FormConfigurationData } from '../../../services/configToolService';
 import type { Section, FormField } from '../../../types';
 
 // Dynamic field component
-function DynamicField({ field, value, onChange, disabled }: {
+function DynamicField({ field, value, onChange }: {
   field: FormField;
   value: any;
   onChange: (name: string, value: any) => void;
-  disabled: boolean;
 }) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { type } = e.target;
@@ -44,7 +46,6 @@ function DynamicField({ field, value, onChange, disabled }: {
             name={field.name}
             value={value || ''}
             onChange={handleChange}
-            disabled={disabled}
             required={field.required}
             className={baseClasses}
           >
@@ -66,7 +67,6 @@ function DynamicField({ field, value, onChange, disabled }: {
             name={field.name}
             value={value || ''}
             onChange={handleChange}
-            disabled={disabled}
             required={field.required}
             placeholder={field.placeholder}
             rows={4}
@@ -83,7 +83,6 @@ function DynamicField({ field, value, onChange, disabled }: {
             name={field.name}
             checked={value || false}
             onChange={handleChange}
-            disabled={disabled}
             required={field.required}
             className="rounded border-gray-300 dark:border-gray-600"
           />
@@ -104,7 +103,6 @@ function DynamicField({ field, value, onChange, disabled }: {
             name={field.name}
             value={value || ''}
             onChange={handleChange}
-            disabled={disabled}
             required={field.required}
             placeholder={field.placeholder}
             step={field.type === 'number' ? '0.01' : undefined}
@@ -119,17 +117,15 @@ function DynamicField({ field, value, onChange, disabled }: {
 }
 
 // Dynamic section component
-function DynamicSection({ section, formData, onChange, disabled }: {
+function DynamicSection({ section, formData, onChange }: {
   section: Section;
   formData: Record<string, any>;
-  onChange: (sectionData: Record<string, any>) => void;
-  disabled: boolean;
+  onChange: (sectionId: string, sectionData: Record<string, any>) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const { t } = useLanguage();
 
   const handleFieldChange = (fieldName: string, value: any) => {
-    onChange({ [fieldName]: value });
+    onChange(section.id, { [fieldName]: value });
   };
 
   // Check if this section should use an existing form component
@@ -138,19 +134,19 @@ function DynamicSection({ section, formData, onChange, disabled }: {
     const sectionData = formData[section.id] || {};
     
     if (title.includes('personal')) {
-      return renderPersonalDetailsFields(sectionData, handleFieldChange, disabled, t);
+      return renderPersonalDetailsFields(sectionData, handleFieldChange);
     } else if (title.includes('family')) {
-      return renderFamilyDetailsFields(sectionData, handleFieldChange, disabled);
+      return renderFamilyDetailsFields(sectionData, handleFieldChange);
     } else if (title.includes('employment')) {
-      return renderEmploymentFields(sectionData, handleFieldChange, disabled);
+      return renderEmploymentFields(sectionData, handleFieldChange);
     } else if (title.includes('income')) {
-      return renderIncomeFields(sectionData, handleFieldChange, disabled);
+      return renderIncomeFields(sectionData, handleFieldChange);
     } else if (title.includes('expenses')) {
-      return renderExpensesFields(sectionData, handleFieldChange, disabled);
+      return renderExpensesFields(sectionData, handleFieldChange);
     } else if (title.includes('assets')) {
-      return renderAssetsFields(sectionData, handleFieldChange, disabled);
+      return renderAssetsFields(sectionData, handleFieldChange);
     } else if (title.includes('liabilities')) {
-      return renderLiabilitiesFields(sectionData, handleFieldChange, disabled);
+      return renderLiabilitiesFields(sectionData, handleFieldChange);
     }
     
     return null;
@@ -194,7 +190,6 @@ function DynamicSection({ section, formData, onChange, disabled }: {
                   field={field}
                   value={formData[section.id]?.[field.name]}
                   onChange={handleFieldChange}
-                  disabled={disabled}
                 />
               ))}
             </div>
@@ -206,7 +201,8 @@ function DynamicSection({ section, formData, onChange, disabled }: {
 }
 
 // Personal Details Fields Renderer
-function renderPersonalDetailsFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean, t: (key: string) => string) {
+function renderPersonalDetailsFields(formData: any, onChange: (name: string, value: any) => void) {
+  const { t } = useLanguage();
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
 
   return (
@@ -219,7 +215,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.salutation || ''}
           onChange={(e) => onChange('salutation', e.target.value)}
-          disabled={disabled}
           className={baseClasses}
           placeholder="Mr./Ms./Dr."
         />
@@ -233,8 +228,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.first_name || ''}
           onChange={(e) => onChange('first_name', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -247,8 +240,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.last_name || ''}
           onChange={(e) => onChange('last_name', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -261,8 +252,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="email"
           value={formData.email || ''}
           onChange={(e) => onChange('email', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -275,8 +264,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="tel"
           value={formData.phone || ''}
           onChange={(e) => onChange('phone', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -289,8 +276,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.street || ''}
           onChange={(e) => onChange('street', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -303,8 +288,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.house_number || ''}
           onChange={(e) => onChange('house_number', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -317,8 +300,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.postal_code || ''}
           onChange={(e) => onChange('postal_code', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -331,8 +312,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.city || ''}
           onChange={(e) => onChange('city', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -345,8 +324,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="date"
           value={formData.birth_date || ''}
           onChange={(e) => onChange('birth_date', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -359,8 +336,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.birth_place || ''}
           onChange={(e) => onChange('birth_place', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -373,8 +348,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="text"
           value={formData.nationality || ''}
           onChange={(e) => onChange('nationality', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         />
       </div>
@@ -386,8 +359,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
         <select
           value={formData.marital_status || ''}
           onChange={(e) => onChange('marital_status', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         >
           <option value="">{t('forms.dynamic.select')}</option>
@@ -405,15 +376,13 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
         <select
           value={formData.housing || ''}
           onChange={(e) => onChange('housing', e.target.value)}
-          disabled={disabled}
-          required
           className={baseClasses}
         >
           <option value="">{t('forms.dynamic.select')}</option>
-          <option value="owned">{t('forms.dynamic.owned')}</option>
-          <option value="rented">{t('forms.dynamic.rented')}</option>
-          <option value="livingWithParents">{t('forms.dynamic.livingWithParents')}</option>
-          <option value="other">{t('forms.dynamic.other')}</option>
+          <option value="Owner">{t('forms.dynamic.owned')}</option>
+          <option value="Renter">{t('forms.dynamic.rented')}</option>
+          <option value="Living with family">{t('forms.dynamic.livingWithParents')}</option>
+          <option value="Other">{t('forms.dynamic.other')}</option>
         </select>
       </div>
 
@@ -422,7 +391,6 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
           type="checkbox"
           checked={formData.eu_citizen || false}
           onChange={(e) => onChange('eu_citizen', e.target.checked)}
-          disabled={disabled}
           className="rounded border-gray-300 dark:border-gray-600"
         />
         <label className="text-sm font-medium text-gray-900 dark:text-white">
@@ -434,7 +402,7 @@ function renderPersonalDetailsFields(formData: any, onChange: (name: string, val
 }
 
 // Income Details Fields Renderer
-function renderIncomeFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
+function renderIncomeFields(formData: any, onChange: (name: string, value: any) => void) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
   const { t } = useLanguage();
 
@@ -449,7 +417,6 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           step="0.01"
           value={formData.gross_income || ''}
           onChange={(e) => onChange('gross_income', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           required
           className={baseClasses}
           placeholder={t('forms.income.monthlyAmount')}
@@ -465,7 +432,6 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           step="0.01"
           value={formData.net_income || ''}
           onChange={(e) => onChange('net_income', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           required
           className={baseClasses}
           placeholder={t('forms.income.monthlyAmount')}
@@ -480,7 +446,6 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           type="text"
           value={formData.tax_class || ''}
           onChange={(e) => onChange('tax_class', e.target.value)}
-          disabled={disabled}
           className={baseClasses}
         />
       </div>
@@ -495,7 +460,6 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           max="14"
           value={formData.number_of_salaries || 12}
           onChange={(e) => onChange('number_of_salaries', parseInt(e.target.value) || 12)}
-          disabled={disabled}
           className={baseClasses}
         />
       </div>
@@ -510,7 +474,6 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.child_benefit || ''}
           onChange={(e) => onChange('child_benefit', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
         />
       </div>
@@ -525,7 +488,6 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.other_income || ''}
           onChange={(e) => onChange('other_income', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
         />
       </div>
@@ -534,7 +496,7 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
 }
 
 // Add placeholder renderers for other form types
-function renderFamilyDetailsFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
+function renderFamilyDetailsFields(formData: any, onChange: (name: string, value: any) => void) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
   const { t } = useLanguage();
 
@@ -548,7 +510,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           type="text"
           value={formData.first_name || ''}
           onChange={(e) => onChange('first_name', e.target.value)}
-          disabled={disabled}
           required
           className={baseClasses}
         />
@@ -562,7 +523,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           type="text"
           value={formData.last_name || ''}
           onChange={(e) => onChange('last_name', e.target.value)}
-          disabled={disabled}
           required
           className={baseClasses}
         />
@@ -575,7 +535,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
         <select
           value={formData.relation || ''}
           onChange={(e) => onChange('relation', e.target.value)}
-          disabled={disabled}
           required
           className={baseClasses}
         >
@@ -595,7 +554,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           type="date"
           value={formData.birth_date || ''}
           onChange={(e) => onChange('birth_date', e.target.value)}
-          disabled={disabled}
           required
           className={baseClasses}
         />
@@ -609,7 +567,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           type="text"
           value={formData.nationality || ''}
           onChange={(e) => onChange('nationality', e.target.value)}
-          disabled={disabled}
           required
           className={baseClasses}
         />
@@ -618,7 +575,7 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
   );
 }
 
-function renderEmploymentFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
+function renderEmploymentFields(formData: any, onChange: (name: string, value: any) => void) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
   const { t } = useLanguage();
 
@@ -632,7 +589,6 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
           type="text"
           value={formData.occupation || ''}
           onChange={(e) => onChange('occupation', e.target.value)}
-          disabled={disabled}
           required
           className={baseClasses}
         />
@@ -645,14 +601,15 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
         <select
           value={formData.contract_type || ''}
           onChange={(e) => onChange('contract_type', e.target.value)}
-          disabled={disabled}
           className={baseClasses}
         >
           <option value="">{t('forms.employment.selectContractType')}</option>
-          <option value="permanent">{t('forms.employment.permanent')}</option>
-          <option value="temporary">{t('forms.employment.temporary')}</option>
-          <option value="freelance">{t('forms.employment.freelance')}</option>
-          <option value="consultant">{t('forms.employment.consultant')}</option>
+          <option value="Permanent">{t('forms.employment.permanent')}</option>
+          <option value="Temporary">{t('forms.employment.temporary')}</option>
+          <option value="Fixed-term">{t('forms.employment.fixedTerm')}</option>
+          <option value="Freelance">{t('forms.employment.freelance')}</option>
+          <option value="Part-time">{t('forms.employment.partTime')}</option>
+          <option value="Full-time">{t('forms.employment.fullTime')}</option>
         </select>
       </div>
 
@@ -664,7 +621,6 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
           type="text"
           value={formData.employer_name || ''}
           onChange={(e) => onChange('employer_name', e.target.value)}
-          disabled={disabled}
           className={baseClasses}
         />
       </div>
@@ -677,7 +633,6 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
           type="date"
           value={formData.employed_since || ''}
           onChange={(e) => onChange('employed_since', e.target.value)}
-          disabled={disabled}
           className={baseClasses}
         />
       </div>
@@ -685,7 +640,7 @@ function renderEmploymentFields(formData: any, onChange: (name: string, value: a
   );
 }
 
-function renderExpensesFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
+function renderExpensesFields(formData: any, onChange: (name: string, value: any) => void) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
   const { t } = useLanguage();
 
@@ -701,7 +656,6 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           min="0"
           value={formData.cold_rent || ''}
           onChange={(e) => onChange('cold_rent', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.expenses.monthlyAmount')}
         />
@@ -717,7 +671,6 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           min="0"
           value={formData.electricity || ''}
           onChange={(e) => onChange('electricity', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.expenses.monthlyAmount')}
         />
@@ -733,7 +686,6 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           min="0"
           value={formData.living_expenses || ''}
           onChange={(e) => onChange('living_expenses', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.expenses.monthlyAmount')}
         />
@@ -749,7 +701,6 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           min="0"
           value={formData.gas || ''}
           onChange={(e) => onChange('gas', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.expenses.monthlyAmount')}
         />
@@ -765,7 +716,6 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           min="0"
           value={formData.telecommunication || ''}
           onChange={(e) => onChange('telecommunication', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.expenses.monthlyAmount')}
         />
@@ -781,7 +731,6 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
           min="0"
           value={formData.other_expenses || ''}
           onChange={(e) => onChange('other_expenses', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.expenses.monthlyAmount')}
         />
@@ -790,7 +739,7 @@ function renderExpensesFields(formData: any, onChange: (name: string, value: any
   );
 }
 
-function renderAssetsFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
+function renderAssetsFields(formData: any, onChange: (name: string, value: any) => void) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
   const { t } = useLanguage();
 
@@ -806,7 +755,6 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.real_estate || ''}
           onChange={(e) => onChange('real_estate', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.assets.currentValue')}
         />
@@ -822,7 +770,6 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.securities || ''}
           onChange={(e) => onChange('securities', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.assets.currentValue')}
         />
@@ -838,7 +785,6 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.bank_deposits || ''}
           onChange={(e) => onChange('bank_deposits', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.assets.currentValue')}
         />
@@ -854,7 +800,6 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.building_savings || ''}
           onChange={(e) => onChange('building_savings', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.assets.currentValue')}
         />
@@ -870,7 +815,6 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.insurance_values || ''}
           onChange={(e) => onChange('insurance_values', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.assets.currentValue')}
         />
@@ -886,7 +830,6 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
           min="0"
           value={formData.other_assets || ''}
           onChange={(e) => onChange('other_assets', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.assets.currentValue')}
         />
@@ -895,7 +838,7 @@ function renderAssetsFields(formData: any, onChange: (name: string, value: any) 
   );
 }
 
-function renderLiabilitiesFields(formData: any, onChange: (name: string, value: any) => void, disabled: boolean) {
+function renderLiabilitiesFields(formData: any, onChange: (name: string, value: any) => void) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
   const { t } = useLanguage();
 
@@ -908,7 +851,6 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
         <select
           value={formData.loan_type || ''}
           onChange={(e) => onChange('loan_type', e.target.value)}
-          disabled={disabled}
           required
           className={baseClasses}
         >
@@ -930,7 +872,6 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
           type="text"
           value={formData.loan_bank || ''}
           onChange={(e) => onChange('loan_bank', e.target.value)}
-          disabled={disabled}
           className={baseClasses}
         />
       </div>
@@ -945,7 +886,6 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
           min="0"
           value={formData.loan_amount || ''}
           onChange={(e) => onChange('loan_amount', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.liabilities.amount')}
         />
@@ -961,7 +901,6 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
           min="0"
           value={formData.loan_monthly_rate || ''}
           onChange={(e) => onChange('loan_monthly_rate', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.liabilities.monthlyPayment')}
         />
@@ -977,7 +916,6 @@ function renderLiabilitiesFields(formData: any, onChange: (name: string, value: 
           min="0"
           value={formData.loan_interest || ''}
           onChange={(e) => onChange('loan_interest', parseFloat(e.target.value) || 0)}
-          disabled={disabled}
           className={baseClasses}
           placeholder={t('forms.liabilities.interestRate')}
         />
@@ -992,43 +930,67 @@ export default function DynamicForm() {
   const { t } = useLanguage();
   const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formConfig, setFormConfig] = useState<FormConfigurationData | null>(null);
   const [submission, setSubmission] = useState<FormSubmissionData | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
-  const [isViewMode, setIsViewMode] = useState(false);
+  const [signatureData, setSignatureData] = useState<string>('');
+  const [showPdfLanguageDropdown, setShowPdfLanguageDropdown] = useState(false);
+  const [selectedPdfLanguage, setSelectedPdfLanguage] = useState('en');
 
   useEffect(() => {
     loadFormData();
   }, [submissionId, configId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showPdfLanguageDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.pdf-dropdown-container')) {
+          setShowPdfLanguageDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showPdfLanguageDropdown]);
 
   const loadFormData = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-
+      
       if (submissionId && submissionId !== 'new') {
         // Load existing submission
         const submissionResponse = await formSubmissionService.getFormSubmission(submissionId);
         if (submissionResponse.success && submissionResponse.data) {
           setSubmission(submissionResponse.data);
           setFormData(submissionResponse.data.form_data || {});
-          setIsViewMode(submissionResponse.data.status !== 'draft');
+          // Load signature data if it exists
+          setSignatureData(submissionResponse.data.form_data?.signature || '');
 
+          console.log('Loading config for existing submission, form_config_id:', submissionResponse.data.form_config_id);
           // Load form configuration
           const configResponse = await formSubmissionService.getFormConfiguration(submissionResponse.data.form_config_id);
           if (configResponse.success && configResponse.data) {
             setFormConfig(configResponse.data);
+          } else {
+            console.error('Failed to load form configuration:', configResponse.message);
+            showError(t('common.error'), `${t('forms.dynamic.loadError')}: ${configResponse.message || 'Configuration not found'}`);
+            navigate('/dashboard/forms');
           }
         } else {
-          showError('Error', 'Failed to load form submission');
           showError(t('common.error'), t('forms.dynamic.loadError'));
           navigate('/dashboard/forms');
         }
       } else if (configId) {
+        console.log('Loading config for new submission, configId:', configId);
         // Create new submission
         const configResponse = await formSubmissionService.getFormConfiguration(configId);
         if (configResponse.success && configResponse.data) {
@@ -1037,16 +999,14 @@ export default function DynamicForm() {
           // Pre-fill form with existing client data
           const prefilledData = await loadClientData(configResponse.data);
           setFormData(prefilledData);
-          setIsViewMode(false);
         } else {
-          showError('Error', 'Failed to load form configuration');
-          showError(t('common.error'), t('forms.dynamic.loadError'));
+          console.error('Failed to load form configuration:', configResponse.message);
+          showError(t('common.error'), `${t('forms.dynamic.loadError')}: ${configResponse.message || 'Configuration not found'}`);
           navigate('/dashboard/forms');
         }
       }
     } catch (error) {
       console.error('Error loading form data:', error);
-      showError('Error', 'Failed to load form data');
       showError(t('common.error'), t('forms.dynamic.loadError'));
       navigate('/dashboard/forms');
     } finally {
@@ -1271,10 +1231,13 @@ export default function DynamicForm() {
     return prefilledData;
   };
 
-  const handleSectionChange = (sectionData: Record<string, any>) => {
+  const handleSectionChange = (sectionId: string, sectionData: Record<string, any>) => {
     setFormData(prev => ({
       ...prev,
-      ...sectionData
+      [sectionId]: {
+        ...prev[sectionId],
+        ...sectionData
+      }
     }));
   };
 
@@ -1284,10 +1247,14 @@ export default function DynamicForm() {
     try {
       setSaving(true);
 
+      // Ensure we're using config_id consistently
+      const configIdToStore = formConfig.config_id || configId;
+      console.log('🔧 Saving form with config_id:', configIdToStore);
+
       const submissionData: Omit<FormSubmissionData, 'id' | 'created_at' | 'updated_at'> = {
-        form_config_id: formConfig.config_id || '',
+        form_config_id: configIdToStore!,
         user_id: user.id,
-        form_data: formData,
+        form_data: { ...formData, signature: signatureData },
         status: asSubmitted ? 'submitted' : 'draft',
       };
       
@@ -1305,21 +1272,26 @@ export default function DynamicForm() {
       }
 
       if (response.success) {
-        showSuccess('Success', asSubmitted ? 'Form submitted successfully!' : 'Form saved as draft');
         showSuccess(t('common.success'), asSubmitted ? t('forms.dynamic.submitSuccess') : t('forms.dynamic.saveSuccess'));
         if (response.data) {
           setSubmission(response.data);
+          console.log('Saved submission with form_config_id:', response.data.form_config_id);
           if (asSubmitted) {
-            setIsViewMode(true);
+            // Navigate to document upload page after successful submission
+            const submissionId = response.data.id;
+            if (submissionId && formConfig?.documents && formConfig.documents.length > 0) {
+              navigate(`/dashboard/forms/documents/single/${submissionId}`);
+            } else {
+              // No documents to upload, go back to forms list
+              navigate('/dashboard/forms');
+            }
           }
         }
       } else {
-        showError('Error', response.message || 'Failed to save form');
         showError(t('common.error'), response.message || t('forms.dynamic.submitError'));
       }
     } catch (error) {
       console.error('Error saving form:', error);
-      showError('Error', 'Failed to save form');
       showError(t('common.error'), t('forms.dynamic.submitError'));
     } finally {
       setSaving(false);
@@ -1330,8 +1302,84 @@ export default function DynamicForm() {
     handleSave(true);
   };
 
-  const handleEdit = () => {
-    setIsViewMode(false);
+  const handleSignatureSave = (signature: string) => {
+    setSignatureData(signature);
+  };
+
+  const handleExportPDF = async (exportLanguage?: string) => {
+    if (!user || !formConfig) return;
+
+    const langToUse = exportLanguage || selectedPdfLanguage;
+    console.log('🔍 Exporting PDF in language:', langToUse);
+    console.log('🔍 exportLanguage param:', exportLanguage);
+    console.log('🔍 selectedPdfLanguage state:', selectedPdfLanguage);
+
+    try {
+      setSaving(true);
+
+      // Create translation function for selected language
+      console.log('🔍 Creating translation function for:', langToUse);
+      const tPdf = createTranslationFunction(langToUse);
+      console.log('🔍 Translation function created, testing key:', tPdf('forms.pdf.formSubmissionReport'));
+      console.log('🔍 Testing more keys:');
+      console.log('  - forms.pdf.formInformation:', tPdf('forms.pdf.formInformation'));
+      console.log('  - forms.pdf.clientInformation:', tPdf('forms.pdf.clientInformation'));
+      console.log('  - forms.pdf.formContent:', tPdf('forms.pdf.formContent'));
+      console.log('  - forms.pdf.notProvided:', tPdf('forms.pdf.notProvided'));
+      console.log('  - forms.pdf.yes:', tPdf('forms.pdf.yes'));
+      console.log('  - forms.pdf.no:', tPdf('forms.pdf.no'));
+
+      // Prepare metadata
+      const metadata = {
+        formName: formConfig.name,
+        formType: formConfig.form_type,
+        version: formConfig.version.toString(),
+        description: formConfig.description || '',
+        submissionDate: submission?.submitted_at 
+          ? new Date(submission.submitted_at).toLocaleDateString(langToUse === 'de' ? 'de-DE' : langToUse === 'es' ? 'es-ES' : 'en-US')
+          : new Date().toLocaleDateString(langToUse === 'de' ? 'de-DE' : langToUse === 'es' ? 'es-ES' : 'en-US'),
+        clientName: (() => {
+          // Try to get name from different possible section structures
+          const sections = Object.values(formData);
+          for (const section of sections) {
+            if (section && typeof section === 'object') {
+              const firstName = section.first_name || section.firstName;
+              const lastName = section.last_name || section.lastName;
+              if (firstName || lastName) {
+                return `${firstName || ''} ${lastName || ''}`.trim();
+              }
+            }
+          }
+          return user.email?.split('@')[0] || 'N/A';
+        })(),
+        clientEmail: (() => {
+          // Try to get email from different possible section structures
+          const sections = Object.values(formData);
+          for (const section of sections) {
+            if (section && typeof section === 'object' && section.email) {
+              return section.email;
+            }
+          }
+          return user.email || 'N/A';
+        })(),
+        status: submission?.status || 'draft'
+      };
+
+      // Extract form sections with selected language
+      const sections = extractFormSections(formConfig, formData, tPdf);
+
+      // Create PDF exporter and generate PDF with selected language
+      const pdfExporter = new PDFExporter();
+      await pdfExporter.generatePDF(metadata, sections, signatureData, tPdf, langToUse);
+
+      showSuccess(t('common.success'), t('forms.dynamic.pdfExported') || 'PDF exported successfully!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      showError(t('common.error'), t('forms.dynamic.pdfExportError') || 'Failed to export PDF. Please try again.');
+    } finally {
+      setSaving(false);
+      setShowPdfLanguageDropdown(false);
+    }
   };
 
   if (loading) {
@@ -1368,12 +1416,6 @@ export default function DynamicForm() {
           <Button variant="outline" onClick={() => navigate('/dashboard/forms')}>
               ← {t('forms.list.backToForms')}
           </Button>
-          {isViewMode && submission?.status === 'draft' && (
-            <Button variant="outline" onClick={handleEdit}>
-              Edit
-              {t('forms.dynamic.editForm')}
-            </Button>
-          )}
       </div>
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
         <div className="flex items-center justify-between">
@@ -1391,16 +1433,6 @@ export default function DynamicForm() {
               <span className="bg-gray-100 dark:bg-gray-900/20 text-gray-800 dark:text-gray-400 px-2 py-1 rounded">
                 v{formConfig.version}
               </span>
-              {submission && (
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  submission.status === 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400' :
-                  submission.status === 'submitted' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
-                  submission.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                  'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                }`}>
-                  {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                </span>
-              )}
             </div>
           </div>
           
@@ -1412,13 +1444,12 @@ export default function DynamicForm() {
         {formConfig.sections
           .sort((a, b) => a.order - b.order)
           .map((section) => (
-            <DynamicSection
-              key={section.id}
-              section={section}
-              formData={formData}
-              onChange={handleSectionChange}
-              disabled={isViewMode}
-            />
+                          <DynamicSection
+                key={section.id}
+                section={section}
+                formData={formData}
+                onChange={handleSectionChange}
+              />
           ))}
       </div>
 
@@ -1434,54 +1465,111 @@ export default function DynamicForm() {
                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border max-h-60 overflow-y-auto">
                   <p className="whitespace-pre-wrap">{consentForm.content}</p>
                 </div>
-                {!isViewMode && (
-                  <div className="mt-4">
-                    <label className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={formData[`consent_${index}`] || false}
-                        onChange={(e) => setFormData(prev => ({ ...prev, [`consent_${index}`]: e.target.checked }))}
-                        required={consentForm.required}
-                        className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {consentForm.checkboxText}
-                        {consentForm.required && <span className="text-red-500 ml-1">*</span>}
-                      </span>
-                    </label>
-                  </div>
-                )}
+                <div className="mt-4">
+                  <label className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={formData[`consent_${index}`] || false}
+                      onChange={(e) => setFormData(prev => ({ ...prev, [`consent_${index}`]: e.target.checked }))}
+                      required={consentForm.required}
+                      className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {consentForm.checkboxText}
+                      {consentForm.required && <span className="text-red-500 ml-1">*</span>}
+                    </span>
+                  </label>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Signature Section */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          {t('forms.dynamic.signature') || 'Signature'}
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          {t('forms.dynamic.signatureDescription') || 'Please provide your signature to complete the form submission.'}
+        </p>
+        <SignaturePad
+          onSave={handleSignatureSave}
+          initialValue={signatureData}
+          className="w-full"
+        />
+      </div>
+
       {/* Action Buttons */}
-      {!isViewMode && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {submission?.id ? t('forms.dynamic.lastSaved') + ' ' + new Date(submission.updated_at || '').toLocaleString() : t('forms.dynamic.notSavedYet')}
-            </div>
-            <div className="flex items-center gap-3">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {submission?.id ? t('forms.dynamic.lastSaved') + ' ' + new Date(submission.updated_at || '').toLocaleString() : t('forms.dynamic.notSavedYet')}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => handleSave(false)}
+              disabled={saving}
+            >
+              {saving ? t('forms.dynamic.saving') : t('forms.dynamic.saveDraft')}
+            </Button>
+            <div className="relative pdf-dropdown-container">
               <Button
                 variant="outline"
-                onClick={() => handleSave(false)}
+                onClick={() => setShowPdfLanguageDropdown(!showPdfLanguageDropdown)}
                 disabled={saving}
+                className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/30"
               >
-                {saving ? t('forms.dynamic.saving') : t('forms.dynamic.saveDraft')}
+                {saving ? t('forms.dynamic.exporting') || 'Exporting...' : 
+                  `${t('forms.dynamic.exportPDF') || 'Export PDF'} (${selectedPdfLanguage.toUpperCase()})`}
+                <span className="ml-1">▼</span>
               </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={saving}
-              >
-                {saving ? t('forms.dynamic.submitting') : t('forms.dynamic.submitForm')}
-              </Button>
+              
+              {showPdfLanguageDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-10 min-w-[150px]">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setSelectedPdfLanguage('en');
+                        handleExportPDF('en');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      🇺🇸 English
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedPdfLanguage('de');
+                        handleExportPDF('de');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      🇩🇪 Deutsch
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedPdfLanguage('es');
+                        handleExportPDF('es');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      🇪🇸 Español
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+            <Button
+              onClick={handleSubmit}
+              disabled={saving}
+            >
+              {saving ? t('forms.dynamic.submitting') : t('forms.dynamic.submitForm')}
+            </Button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 } 
