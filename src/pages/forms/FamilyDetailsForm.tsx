@@ -217,13 +217,31 @@ export default function FamilyDetailsForm() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {t('forms.familyDetails.title')}
             </h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">
+              {t('forms.familyDetails.description')}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {!isEditMode ? (
+              <Button variant="outline" onClick={handleEdit}>
+                {t('common.edit')}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleCancel}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -383,28 +401,6 @@ export default function FamilyDetailsForm() {
           </div>
         </div>
       )}
-
-      {/* Action Buttons */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {!isEditMode ? (
-              <Button variant="outline" onClick={handleEdit}>
-                {t('common.edit')}
-              </Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={handleCancel}>
-                  {t('common.cancel')}
-                </Button>
-                <Button onClick={handleSubmit} disabled={loading}>
-                  {loading ? t('common.saving') : t('common.save')}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 } 

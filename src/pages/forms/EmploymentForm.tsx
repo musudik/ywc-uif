@@ -187,15 +187,31 @@ export default function EmploymentForm() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      
-
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {t('forms.employment.title')}
             </h1>
-            
+            <p className="text-gray-600 dark:text-gray-300 mt-1">
+              {t('forms.employment.description')}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {!isEditMode ? (
+              <Button variant="outline" onClick={handleEdit}>
+                {t('common.edit')}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleCancel}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -278,29 +294,6 @@ export default function EmploymentForm() {
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
-        <div className="flex items-center justify-between">
-          
-          <div className="flex items-center gap-3">
-            {!isEditMode ? (
-              <Button variant="outline" onClick={handleEdit}>
-                {t('common.edit')}
-              </Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={handleCancel}>
-                  {t('common.cancel')}
-                </Button>
-                <Button onClick={handleSubmit} disabled={loading}>
-                  {loading ? t('common.saving') : t('common.save')}
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </div>
