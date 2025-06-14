@@ -223,9 +223,6 @@ export default function FamilyDetailsForm() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {t('forms.familyDetails.title')}
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-1">
-              {t('forms.familyDetails.description')}
-            </p>
           </div>
           <div className="flex items-center gap-3">
             {!isEditMode ? (

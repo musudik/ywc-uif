@@ -158,9 +158,6 @@ export default function AssetsForm() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {t('forms.assets.title')}
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-1">
-              {t('forms.assets.description')}
-            </p>
           </div>
           <div className="flex items-center gap-3">
             {!isEditMode ? (
