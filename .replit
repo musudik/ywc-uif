@@ -6,7 +6,7 @@ channel = "stable-24_05"
 
 [deployment]
 run = ["sh", "-c", "npm run preview"]
-deploymentTarget = "gce"
+deploymentTarget = "cloudrun"
 build = ["sh", "-c", "npm install && npm run build"]
 
 [languages.javascript]
