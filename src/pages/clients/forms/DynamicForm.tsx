@@ -1388,7 +1388,6 @@ export default function DynamicForm() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading form...</span>
             <span className="ml-3 text-gray-600 dark:text-gray-400">{t('forms.dynamic.loadingForm')}</span>
           </div>
         </div>

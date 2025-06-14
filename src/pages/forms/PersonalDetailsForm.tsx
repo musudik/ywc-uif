@@ -52,6 +52,8 @@ export default function PersonalDetailsForm() {
   };
   
   const [formData, setFormData] = useState({
+    user_id: '',
+    personal_id: '',
     coach_id: getCoachId(),
     applicant_type: 'PrimaryApplicant' as ApplicantType,
     salutation: '',
@@ -79,14 +81,30 @@ export default function PersonalDetailsForm() {
   useEffect(() => {
     const loadExistingData = async () => {
       // Determine which personal ID to use: URL param 'id', URL query 'personal_id', or user's own ID for clients
-      const personalIdToLoad = id || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
+      let personalIdToLoad = id || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
       
+      // If personalIdToLoad is null, check if URL contains a UUID in the path
+      // This handles cases where ADMIN/COACHES are editing client details via direct URL
+      if (!personalIdToLoad && (user?.role === 'ADMIN' || user?.role === 'COACH')) {
+        const currentPath = window.location.pathname;
+        // Extract UUID pattern from URL: /dashboard/forms/personal-details/[UUID]
+        const uuidRegex = /\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i;
+        const uuidMatch = currentPath.match(uuidRegex);
+        if (uuidMatch) {
+          personalIdToLoad = uuidMatch[1];
+          console.log('Extracted UUID from URL path:', personalIdToLoad);
+        }
+      }
+      
+      console.log('Personal ID to load:', personalIdToLoad);
       if (personalIdToLoad) {
         setDataLoading(true);
         try {
           // For all users, use the specific ID to load personal details
           const personalDetails = await formService.getPersonalDetailsById(personalIdToLoad);
           setFormData({
+            user_id: personalDetails.user_id,
+            personal_id: personalDetails.personal_id,
             coach_id: personalDetails.coach_id,
             applicant_type: personalDetails.applicant_type,
             salutation: personalDetails.salutation,
@@ -114,7 +132,7 @@ export default function PersonalDetailsForm() {
           if (user?.role === 'CLIENT' && !id && !personalIdFromParams) {
             setExistingPersonalId(user.id);
           } else {
-            setExistingPersonalId(personalDetails.personal_id);
+            setExistingPersonalId(personalDetails.user_id);
           }
           setIsEditMode(false); // Data exists, start in read-only mode
         } catch (error) {
@@ -209,33 +227,29 @@ export default function PersonalDetailsForm() {
         birth_date: formatDateForAPI(formData.birth_date)
       };
 
-      let personalDetails;
+      let personalDetails = await formService.getPersonalDetailsById(formData.user_id);
       
-      if (existingPersonalId) {
+      if (personalDetails.user_id) {
         // Update existing record
         // For CLIENT users updating their own data, use their user.id as personal_id
         const personalIdToUpdate = user?.role === 'CLIENT' && !id && !personalIdFromParams 
           ? user.id 
           : existingPersonalId;
         
-        personalDetails = await formService.updatePersonalDetails(personalIdToUpdate, formDataForAPI);
+        await formService.updatePersonalDetails(personalIdToUpdate, formDataForAPI);
         showSuccess(t('forms.personalDetails.personalUpdated'), t('forms.personalDetails.personalUpdatedMessage'));
         setIsEditMode(false); // Return to read-only mode after successful update
       } else {
         // Create new record
-        personalDetails = await formService.createPersonalDetails(formDataForAPI);
+        await formService.createPersonalDetails(formDataForAPI);
         showSuccess(t('forms.personalDetails.personalSaved'), t('forms.personalDetails.personalSavedMessage'));
-        setExistingPersonalId(personalDetails.personal_id);
+        setExistingPersonalId(formData.user_id);
         setIsEditMode(false); // Return to read-only mode after successful creation
       }
       
-      // Navigate based on user role, passing the personal_id
-      if (user?.role === 'CLIENT') {
-        navigate(`/dashboard/forms/family-details?personal_id=${personalDetails.personal_id}`);
-      } else {
-        // For coaches/admins, stay on the form in read-only mode
-        // navigate('/dashboard');
-      }
+      // Navigate based on user role, passing the user_id
+      navigate(`/dashboard/forms/family-details?personal_id=${formData.user_id}`);
+
     } catch (error) {
       showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save personal details');
     } finally {
@@ -257,231 +271,206 @@ export default function PersonalDetailsForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {t('forms.personalDetails.title')} {existingPersonalId ? (isEditMode ? t('forms.personalDetails.editing') : t('forms.personalDetails.viewing')) : t('forms.personalDetails.new')}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {isEditMode 
-                  ? existingPersonalId 
-                    ? t('forms.personalDetails.updateInfo')
-                    : t('forms.personalDetails.subtitle')
-                  : t('forms.personalDetails.viewInfo')
-                }
-              </p>
+    <div className="container mx-auto p-6 space-y-6">
+
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {t('forms.personalDetails.title')}
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Form Sections */}
+      <div className="space-y-6">
+        {/* Basic Information Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+          <div className="border-b border-gray-200 dark:border-gray-600 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.basicInformation')}
+                </h3>
+              </div>
             </div>
-            {!isEditMode && existingPersonalId && (
-              <Button onClick={handleEdit} variant="outline">
-                {t('common.edit')}
-              </Button>
-            )}
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.salutation')}
+                </label>
+                <select
+                  name="salutation"
+                  value={formData.salutation}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">{t('forms.personalDetails.selectSalutation')}</option>
+                  <option value="Mr.">{t('forms.personalDetails.mr')}</option>
+                  <option value="Ms.">{t('forms.personalDetails.ms')}</option>
+                  <option value="Dr.">{t('forms.personalDetails.dr')}</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.firstName')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.lastName')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.email')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.phone')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.whatsapp')}
+                </label>
+                <input
+                  type="tel"
+                  name="whatsapp"
+                  value={formData.whatsapp}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('forms.personalDetails.applicantType')} <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="applicant_type"
-                value={formData.applicant_type}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
-              >
-                <option value="PrimaryApplicant">{t('forms.personalDetails.primaryApplicant')}</option>
-                <option value="SecondaryApplicant">{t('forms.personalDetails.secondaryApplicant')}</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('forms.personalDetails.salutation')} <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="salutation"
-                value={formData.salutation}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
-              >
-                <option value="">{t('forms.personalDetails.selectSalutation')}</option>
-                <option value="Mr">Mr.</option>
-                <option value="Mrs">Mrs.</option>
-                <option value="Ms">Ms.</option>
-                <option value="Dr">Dr.</option>
-                <option value="Prof">Prof.</option>
-              </select>
-            </div>
-
-            <TextInput
-              label={t('forms.personalDetails.firstName')}
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('placeholders.enterFirstName')}
-            />
-
-            <TextInput
-              label={t('forms.personalDetails.lastName')}
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('placeholders.enterLastName')}
-            />
-
-            <TextInput
-              label={t('forms.personalDetails.email')}
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('placeholders.enterEmail')}
-            />
-
-            <TextInput
-              label={t('forms.personalDetails.phone')}
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('placeholders.enterPhone')}
-            />
-
-            <TextInput
-              label={t('forms.personalDetails.whatsapp')}
-              name="whatsapp"
-              type="tel"
-              value={formData.whatsapp}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              placeholder={t('placeholders.enterWhatsApp')}
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('forms.personalDetails.maritalStatus')} <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="marital_status"
-                value={formData.marital_status}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
-              >
-                <option value="">{t('forms.personalDetails.selectMaritalStatus')}</option>
-                <option value="single">{t('forms.personalDetails.single')}</option>
-                <option value="married">{t('forms.personalDetails.married')}</option>
-                <option value="divorced">{t('forms.personalDetails.divorced')}</option>
-                <option value="widowed">{t('forms.personalDetails.widowed')}</option>
-                <option value="separated">{t('forms.personalDetails.separated')}</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Coach Assignment (for ADMIN users) */}
-          {user?.role === 'ADMIN' && (
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                {t('forms.personalDetails.coachAssignment')}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('forms.personalDetails.assignedCoach')} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="coach_id"
-                    value={formData.coach_id}
-                    onChange={handleInputChange}
-                    disabled={!isEditMode}
-                    required
-                    className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
-                  >
-                    <option value="">{t('forms.personalDetails.selectCoach')}</option>
-                    {availableCoaches.map((coach) => (
-                      <option key={coach.user_id} value={coach.user_id}>
-                        {coach.first_name} {coach.last_name}
-                      </option>
-                    ))}
-                  </select>
-                  {!formData.coach_id && isEditMode && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                      Please select a coach to assign this client to.
-                    </p>
-                  )}
-                </div>
+        {/* Address Information Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+          <div className="border-b border-gray-200 dark:border-gray-600 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.addressInformation')}
+                </h3>
               </div>
             </div>
-          )}
-
-          {/* Address Information */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              {t('forms.personalDetails.addressInfo')}
-            </h3>
+          </div>
+          
+          <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput
-                label={t('forms.personalDetails.street')}
-                name="street"
-                value={formData.street}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder={t('placeholders.enterStreet')}
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.street')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="street"
+                  value={formData.street}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <TextInput
-                label={t('forms.personalDetails.houseNumber')}
-                name="house_number"
-                value={formData.house_number}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder={t('placeholders.enterHouseNumber')}
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.houseNumber')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="house_number"
+                  value={formData.house_number}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <TextInput
-                label={t('forms.personalDetails.postalCode')}
-                name="postal_code"
-                value={formData.postal_code}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder={t('placeholders.enterPostalCode')}
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.postalCode')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="postal_code"
+                  value={formData.postal_code}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <TextInput
-                label={t('forms.personalDetails.city')}
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder={t('placeholders.enterCity')}
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.city')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('forms.personalDetails.housingSituation')} <span className="text-red-500">*</span>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.housing')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="housing"
@@ -489,148 +478,195 @@ export default function PersonalDetailsForm() {
                   onChange={handleInputChange}
                   disabled={!isEditMode}
                   required
-                  className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">{t('forms.personalDetails.selectHousingSituation')}</option>
-                  <option value="Owner">{t('forms.personalDetails.owner')}</option>
-                  <option value="Renter">{t('forms.personalDetails.renter')}</option>
-                  <option value="Living with family">{t('forms.personalDetails.livingWithFamily')}</option>
+                  <option value="">{t('forms.personalDetails.selectHousing')}</option>
+                  <option value="Owner">{t('forms.personalDetails.owned')}</option>
+                  <option value="Renter">{t('forms.personalDetails.rented')}</option>
+                  <option value="Living with family">{t('forms.personalDetails.livingWithParents')}</option>
                   <option value="Other">{t('forms.personalDetails.other')}</option>
                 </select>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Personal Information */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Personal Information
-            </h3>
+        {/* Personal Information Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+          <div className="border-b border-gray-200 dark:border-gray-600 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.personalInformation')}
+                </h3>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput
-                label="Date of Birth"
-                name="birth_date"
-                type="date"
-                value={formData.birth_date}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.dateOfBirth')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="birth_date"
+                  value={formData.birth_date}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <TextInput
-                label="Place of Birth"
-                name="birth_place"
-                value={formData.birth_place}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder="Enter your place of birth"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.placeOfBirth')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="birth_place"
+                  value={formData.birth_place}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <TextInput
-                label="Nationality"
-                name="nationality"
-                value={formData.nationality}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder="Enter your nationality"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.nationality')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="nationality"
+                  value={formData.nationality}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
-              <TextInput
-                label="Residence Permit"
-                name="residence_permit"
-                value={formData.residence_permit}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder="Enter residence permit number (if applicable)"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.maritalStatus')} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="marital_status"
+                  value={formData.marital_status}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">{t('forms.personalDetails.selectMaritalStatus')}</option>
+                  <option value="single">{t('forms.personalDetails.single')}</option>
+                  <option value="married">{t('forms.personalDetails.married')}</option>
+                  <option value="divorced">{t('forms.personalDetails.divorced')}</option>
+                  <option value="widowed">{t('forms.personalDetails.widowed')}</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.residencePermit')}
+                </label>
+                <input
+                  type="text"
+                  name="residence_permit"
+                  value={formData.residence_permit}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
 
               <div className="flex items-center space-x-3">
                 <input
                   type="checkbox"
-                  id="eu_citizen"
                   name="eu_citizen"
                   checked={formData.eu_citizen}
                   onChange={handleInputChange}
                   disabled={!isEditMode}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:cursor-not-allowed"
+                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                 />
-                <label htmlFor="eu_citizen" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  EU Citizen
+                <label className="text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.euCitizen')}
                 </label>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Financial Information */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Financial Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput
-                label="Tax ID"
-                name="tax_id"
-                value={formData.tax_id}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder="Enter your tax ID"
-              />
-
-              <TextInput
-                label="IBAN"
-                name="iban"
-                value={formData.iban}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                placeholder="Enter your IBAN"
-              />
+        {/* Financial Information Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+          <div className="border-b border-gray-200 dark:border-gray-600 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.financialInformation')}
+                </h3>
+              </div>
             </div>
           </div>
-
-          <div className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="px-4 py-2"
-            >
-              {existingPersonalId && !isEditMode ? 'Back' : 'Cancel'}
-            </Button>
-
-            {isEditMode && (
-              <div className="flex gap-3">
-                <Button
-                  type="submit"
-                  loading={loading}
-                  size="sm"
-                  className="px-4 py-2"
-                >
-                  {existingPersonalId ? 'Update' : 'Save'}
-                </Button>
-                
-                {user?.role === 'CLIENT' && (
-                  <Button
-                    type="submit"
-                    loading={loading}
-                    variant="secondary"
-                    size="sm"
-                    className="px-4 py-2"
-                    onClick={() => {
-                      // This will trigger form submission and then navigate to next form
-                    }}
-                  >
-                    Save & Continue
-                  </Button>
-                )}
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.taxId')}
+                </label>
+                <input
+                  type="text"
+                  name="tax_id"
+                  value={formData.tax_id}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.personalDetails.iban')}
+                </label>
+                <input
+                  type="text"
+                  name="iban"
+                  value={formData.iban}
+                  onChange={handleInputChange}
+                  disabled={!isEditMode}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {!isEditMode ? (
+              <Button variant="outline" onClick={handleEdit}>
+                {t('common.edit')}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleCancel}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
             )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

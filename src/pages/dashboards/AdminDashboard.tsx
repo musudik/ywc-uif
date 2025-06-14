@@ -171,7 +171,7 @@ export default function AdminDashboard() {
       value: stats?.totalCoaches || 0,
       icon: '👨‍🏫',
       color: '#10B981',
-      link: '/dashboard/users?role=coach',
+      link: '/dashboard/users?role=COACH',
     },
     {
       title: t('dashboard.admin.totalClients'),

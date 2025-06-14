@@ -4,8 +4,11 @@ import { useAuth } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNotification } from '../../../context/NotificationContext';
 import Button from '../../../components/ui/Button';
+import { SignaturePad } from '../../../components/util';
 import formSubmissionService, { type FormSubmissionData } from '../../../services/formSubmissionService';
 import { formService } from '../../../services/formService';
+import { PDFExporter, extractFormSections } from '../../../utils/pdfExport';
+import { createTranslationFunction } from '../../../utils/translations';
 import type { FormConfigurationData } from '../../../services/configToolService';
 import type { Section, FormField } from '../../../types';
 
@@ -40,10 +43,30 @@ export default function DualApplicantForm() {
   const [submission, setSubmission] = useState<FormSubmissionData | null>(null);
   const [applicant1Data, setApplicant1Data] = useState<ApplicantData>({});
   const [applicant2Data, setApplicant2Data] = useState<ApplicantData>({});
+  const [applicant1Signature, setApplicant1Signature] = useState<string>('');
+  const [applicant2Signature, setApplicant2Signature] = useState<string>('');
+  const [showPdfLanguageDropdown, setShowPdfLanguageDropdown] = useState(false);
+  const [selectedPdfLanguage, setSelectedPdfLanguage] = useState('en');
+  const [consentData, setConsentData] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadFormData();
   }, [submissionId, configId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showPdfLanguageDropdown) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.pdf-dropdown-container')) {
+          setShowPdfLanguageDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showPdfLanguageDropdown]);
 
   const loadFormData = async () => {
     if (!user) return;
@@ -61,6 +84,13 @@ export default function DualApplicantForm() {
           const submissionData = submissionResponse.data.form_data || {};
           setApplicant1Data(submissionData.applicant1 || {});
           setApplicant2Data(submissionData.applicant2 || {});
+          
+          // Load signatures if they exist
+          setApplicant1Signature(submissionData.applicant1Signature || '');
+          setApplicant2Signature(submissionData.applicant2Signature || '');
+          
+          // Load consent data if it exists
+          setConsentData(submissionData.consentData || {});
 
           console.log('Loading config for existing dual submission, form_config_id:', submissionResponse.data.form_config_id);
           // Load form configuration
@@ -161,6 +191,14 @@ export default function DualApplicantForm() {
     setApplicant2Data(prev => ({ ...prev, ...sectionData }));
   };
 
+  const handleApplicant1SignatureSave = (signature: string) => {
+    setApplicant1Signature(signature);
+  };
+
+  const handleApplicant2SignatureSave = (signature: string) => {
+    setApplicant2Signature(signature);
+  };
+
   const handleSave = async (asSubmitted = false) => {
     if (!user || !formConfig) return;
 
@@ -174,6 +212,9 @@ export default function DualApplicantForm() {
       const formData = {
         applicant1: applicant1Data,
         applicant2: applicant2Data,
+        applicant1Signature: applicant1Signature,
+        applicant2Signature: applicant2Signature,
+        consentData: consentData,
       };
 
       if (submission?.id) {
@@ -191,6 +232,9 @@ export default function DualApplicantForm() {
 
         if (response.success) {
           showSuccess(t('common.success'), asSubmitted ? t('forms.dynamic.submitSuccess') : t('forms.dynamic.saveSuccess'));
+          if (response.data) {
+            setSubmission(response.data);
+          }
           if (asSubmitted) {
             // Navigate to document upload page after successful submission
             const submissionId = submission?.id;
@@ -247,6 +291,70 @@ export default function DualApplicantForm() {
 
   const handleSubmit = () => {
     handleSave(true);
+  };
+
+  const handleExportPDF = async (exportLanguage?: string) => {
+    if (!user || !formConfig) return;
+
+    const langToUse = exportLanguage || selectedPdfLanguage;
+    console.log('🔍 Exporting Dual PDF in language:', langToUse);
+
+    try {
+      setSaving(true);
+
+      // Create translation function for selected language
+      const tPdf = createTranslationFunction(langToUse);
+
+      // Prepare metadata for dual applicant form
+      const metadata = {
+        formName: formConfig.name,
+        formType: formConfig.form_type,
+        version: formConfig.version.toString(),
+        description: formConfig.description || '',
+        submissionDate: submission?.submitted_at 
+          ? new Date(submission.submitted_at).toLocaleDateString(langToUse === 'de' ? 'de-DE' : langToUse === 'es' ? 'es-ES' : 'en-US')
+          : new Date().toLocaleDateString(langToUse === 'de' ? 'de-DE' : langToUse === 'es' ? 'es-ES' : 'en-US'),
+        clientName: (() => {
+          // Get primary applicant name (Applicant 1)
+          const firstName = applicant1Data.first_name || '';
+          const lastName = applicant1Data.last_name || '';
+          if (firstName || lastName) {
+            return `${firstName} ${lastName}`.trim();
+          }
+          return user.email?.split('@')[0] || 'N/A';
+        })(),
+        clientEmail: applicant1Data.email || user.email || 'N/A',
+        status: submission?.status || 'draft'
+      };
+
+      // Create dual applicant structure for PDF export
+      const dualFormData = {
+        applicant1: applicant1Data,
+        applicant2: applicant2Data,
+        consentData: consentData
+      };
+
+      // Extract form sections with dual applicant data
+      const sections = extractFormSections(formConfig, dualFormData, tPdf);
+
+      // Combine both signatures into a single signature field for PDF
+      const combinedSignatures = {
+        applicant1: applicant1Signature,
+        applicant2: applicant2Signature
+      };
+
+      // Create PDF exporter and generate PDF
+      const pdfExporter = new PDFExporter();
+      await pdfExporter.generateDualApplicantPDF(metadata, sections, combinedSignatures, tPdf, langToUse, formConfig, consentData);
+
+      showSuccess(t('common.success'), t('forms.dynamic.pdfExported') || 'PDF exported successfully!');
+    } catch (error) {
+      console.error('Error exporting dual applicant PDF:', error);
+      showError(t('common.error'), t('forms.dynamic.pdfExportError') || 'Failed to export PDF. Please try again.');
+    } finally {
+      setSaving(false);
+      setShowPdfLanguageDropdown(false);
+    }
   };
 
   if (loading) {
@@ -360,16 +468,145 @@ export default function DualApplicantForm() {
               ))}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-4 pt-8 border-t border-gray-200 dark:border-gray-600 mt-8">
+      {/* Consent Form */}
+      {formConfig.consent_forms && formConfig.consent_forms.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+          <div className="space-y-6">
+            {formConfig.consent_forms.map((consentForm, index) => (
+              <div key={index}>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  {consentForm.title}
+                </h2>
+                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border max-h-60 overflow-y-auto">
+                  <p className="whitespace-pre-wrap">{consentForm.content}</p>
+                </div>
+                <div className="mt-4">
+                  <label className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={consentData[`consent_${index}`] || false}
+                      onChange={(e) => setConsentData(prev => ({ ...prev, [`consent_${index}`]: e.target.checked }))}
+                      required={consentForm.required}
+                      className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {consentForm.checkboxText}
+                      {consentForm.required && <span className="text-red-500 ml-1">*</span>}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Signature Sections */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+          {t('forms.dynamic.signatures') || 'Signatures'}
+        </h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Applicant 1 Signature */}
+          <div className="space-y-4">
+            <div className="border-b border-gray-200 dark:border-gray-600 pb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {t('forms.list.applicant1')} {t('forms.dynamic.signature') || 'Signature'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('forms.dynamic.signatureDescription') || 'Please provide your signature to complete the form submission.'}
+              </p>
+            </div>
+            <SignaturePad
+              onSave={handleApplicant1SignatureSave}
+              initialValue={applicant1Signature}
+              className="w-full"
+            />
+          </div>
+
+          {/* Applicant 2 Signature */}
+          <div className="space-y-4">
+            <div className="border-b border-gray-200 dark:border-gray-600 pb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {t('forms.list.applicant2')} {t('forms.dynamic.signature') || 'Signature'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('forms.dynamic.signatureDescription') || 'Please provide your signature to complete the form submission.'}
+              </p>
+            </div>
+            <SignaturePad
+              onSave={handleApplicant2SignatureSave}
+              initialValue={applicant2Signature}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {submission?.id ? t('forms.dynamic.lastSaved') + ' ' + new Date(submission.updated_at || '').toLocaleString() : t('forms.dynamic.notSavedYet')}
+          </div>
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               onClick={() => handleSave(false)}
               disabled={saving}
             >
-              {t('forms.dual.saveAsDraft')}
+              {saving ? t('forms.dynamic.saving') : t('forms.dynamic.saveDraft')}
             </Button>
+            <div className="relative pdf-dropdown-container">
+              <Button
+                variant="outline"
+                onClick={() => setShowPdfLanguageDropdown(!showPdfLanguageDropdown)}
+                disabled={saving}
+                className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/30"
+              >
+                {saving ? t('forms.dynamic.exporting') || 'Exporting...' : 
+                  `${t('forms.dynamic.exportPDF') || 'Export PDF'} (${selectedPdfLanguage.toUpperCase()})`}
+                <span className="ml-1">▼</span>
+              </Button>
+              
+              {showPdfLanguageDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg z-10 min-w-[150px]">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setSelectedPdfLanguage('en');
+                        handleExportPDF('en');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      🇺🇸 English
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedPdfLanguage('de');
+                        handleExportPDF('de');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      🇩🇪 Deutsch
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedPdfLanguage('es');
+                        handleExportPDF('es');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      🇪🇸 Español
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <Button
               onClick={handleSubmit}
               disabled={saving}

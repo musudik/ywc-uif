@@ -40,8 +40,8 @@ export default function ClientManagement() {
       setLoading(true);
       if (user?.role === 'ADMIN') {
         // For admins, get all users with CLIENT role
-        const allUsers = await authService.getAllUsers();
-        const clientUsers = allUsers.filter((u: any) => u.role === 'CLIENT');
+        const clientUsers = await authService.getAllClients();
+        //const clientUsers = allUsers.filter((u: any) => u.role === 'CLIENT');
         
         // Transform the data to match our interface
         const clientData = clientUsers.map((client: any) => ({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -8,6 +8,18 @@ import { formatDateForInput, formatDateForAPI } from '../../utils/dateUtils';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
 import type { EmploymentType } from '../../types';
+
+interface EmploymentFormData {
+  user_id: string;
+  employment_type: EmploymentType;
+  occupation: string;
+  contract_type: string;
+  contract_duration: string;
+  employer_name: string;
+  employed_since: string;
+  employer_address?: string;
+  employer_phone?: string;
+}
 
 export default function EmploymentForm() {
   const { user } = useAuth();
@@ -19,52 +31,37 @@ export default function EmploymentForm() {
   const [dataLoading, setDataLoading] = useState(false);
   const [existingEmploymentId, setExistingEmploymentId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [searchParams] = useSearchParams();
+  const personalIdFromParams = searchParams.get('personal_id');
 
   const [formData, setFormData] = useState({
+    user_id: '',
     employment_type: 'PrimaryEmployment' as EmploymentType,
     occupation: '',
     contract_type: '',
     contract_duration: '',
     employer_name: '',
     employed_since: '',
+    employer_address: '',
+    employer_phone: '',
   });
 
-  useEffect(() => {
-    const loadExistingData = async () => {
-      // Determine which personal ID to use: URL param 'id', URL query 'personal_id', or user's own ID for clients
-      const userId = (user?.role === 'CLIENT' ? user?.id : null);
-      
-      if (userId) {
-        setDataLoading(true);
-        try {
-          const employmentDetails = await formService.getEmploymentById(userId);
-          console.log('employmentDetails', employmentDetails);
-          if (employmentDetails) {
-            setFormData({
-              employment_type: employmentDetails.employment_type,
-              occupation: employmentDetails.occupation,
-              contract_type: employmentDetails.contract_type,
-              contract_duration: employmentDetails.contract_duration,
-              employer_name: employmentDetails.employer_name,
-              employed_since: formatDateForInput(employmentDetails.employed_since),
-            });
-            setExistingEmploymentId(employmentDetails.employment_id);
-            setIsEditMode(false); // Data exists, start in read-only mode
-          } else {
-            setIsEditMode(true); // No data exists, start in edit mode
-          }
-        } catch (error) {
-          console.log('No existing employment details found, starting with empty form');
-          setIsEditMode(true); // No data exists, start in edit mode
-        } finally {
-          setDataLoading(false);
-        }
-      } else {
-        setIsEditMode(true); // No personalId available, start in edit mode
-      }
-    };
+  const resetFormData = () => {
+    setFormData({
+      user_id: '',
+      employment_type: 'PrimaryEmployment' as EmploymentType,
+      occupation: '',
+      contract_type: '',
+      contract_duration: '',
+      employer_name: '',
+      employed_since: '',
+      employer_address: '',
+      employer_phone: '',
+    });
+  };
 
-    loadExistingData();
+  useEffect(() => {
+    loadExistingData(); 
   }, [user?.id, user?.role]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -75,6 +72,49 @@ export default function EmploymentForm() {
     }));
   };
 
+  const getUserId = () => {
+    return formData.user_id || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
+  };
+
+  const loadExistingData = async () => {
+    console.log('loadExistingData');
+    // Determine which personal ID to use: URL param 'id', URL query 'personal_id', or user's own ID for clients
+    const userId = getUserId();
+    console.log('userId', userId);
+    
+    if (userId) {
+      setDataLoading(true);
+      try {
+        const employmentDetails = await formService.getEmploymentById(userId);
+        console.log('employmentDetails', employmentDetails);
+        if (employmentDetails) {
+          setFormData({
+            user_id: employmentDetails.user_id,
+            employment_type: employmentDetails.employment_type,
+            occupation: employmentDetails.occupation,
+            contract_type: employmentDetails.contract_type,
+            contract_duration: employmentDetails.contract_duration,
+            employer_name: employmentDetails.employer_name,
+            employed_since: formatDateForInput(employmentDetails.employed_since),
+            employer_address: employmentDetails.employer_address,
+            employer_phone: employmentDetails.employer_phone,
+          });
+          setExistingEmploymentId(employmentDetails.employment_id);
+          setIsEditMode(false); // Data exists, start in read-only mode
+        } else {
+          setIsEditMode(true); // No data exists, start in edit mode
+        }
+      } catch (error) {
+        console.log('No existing employment details found, starting with empty form');
+        setIsEditMode(true); // No data exists, start in edit mode
+      } finally {
+        setDataLoading(false);
+      }
+    } else {
+      setIsEditMode(true); // No personalId available, start in edit mode
+    }
+  };
+
   const handleEdit = () => {
     setIsEditMode(true);
   };
@@ -82,6 +122,7 @@ export default function EmploymentForm() {
   const handleCancel = () => {
     if (existingEmploymentId) {
       setIsEditMode(false); // Go back to read-only mode
+      resetFormData();
     } else {
       navigate(-1); // Navigate away if no data
     }
@@ -93,7 +134,7 @@ export default function EmploymentForm() {
 
     try {
       // Determine the user_id to use
-      const userIdToUse = (user?.role === 'CLIENT' ? user?.id : null);
+      const userIdToUse = formData.user_id;
       
       if (!userIdToUse) {
         showError('Missing Information', 'Unable to determine user ID for employment record.');
@@ -123,9 +164,7 @@ export default function EmploymentForm() {
       }
       
       // Navigate based on user role, passing the personal_id
-      if (user?.role === 'CLIENT') {
-        navigate(`/dashboard/forms/income?personal_id=${userIdToUse}`);
-      }
+      navigate(`/dashboard/forms/income?personal_id=${userIdToUse}`);
     } catch (error) {
       showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save employment details');
     } finally {
@@ -147,161 +186,123 @@ export default function EmploymentForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="container mx-auto p-6 space-y-6">
+      
+
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {t('forms.employment.title')}
+            </h1>
+            
+          </div>
+        </div>
+      </div>
+
+      {/* Employment Details Form */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+        <div className="border-b border-gray-200 dark:border-gray-600 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {t('forms.employment.title')} {existingEmploymentId ? (isEditMode ? t('forms.employment.editing') : t('forms.employment.viewing')) : t('forms.employment.new')}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {isEditMode 
-                  ? existingEmploymentId 
-                    ? t('forms.employment.updateInfo')
-                    : t('forms.employment.subtitle')
-                  : t('forms.employment.viewInfo')
-                }
-              </p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {t('forms.employment.employmentDetails')}
+              </h3>
             </div>
-            {!isEditMode && existingEmploymentId && (
-              <Button onClick={handleEdit} variant="outline">
-                {t('common.edit')}
-              </Button>
-            )}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Employment Type */}
+        <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('forms.employment.employmentType')} <span className="text-red-500">*</span>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.employment.occupation')} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="occupation"
+                value={formData.occupation}
+                onChange={handleInputChange}
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.employment.occupationPlaceholder')}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.employment.contractType')} <span className="text-red-500">*</span>
               </label>
               <select
-                name="employment_type"
-                value={formData.employment_type}
+                name="contract_type"
+                value={formData.contract_type}
                 onChange={handleInputChange}
-                disabled={!isEditMode}
                 required
-                className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="PrimaryEmployment">{t('forms.employment.primaryEmployment')}</option>
-                <option value="SecondaryEmployment">{t('forms.employment.secondaryEmployment')}</option>
+                <option value="">{t('forms.employment.selectContractType')}</option>
+                <option value="Permanent">{t('forms.employment.permanent')}</option>
+                <option value="Temporary">{t('forms.employment.temporary')}</option>
+                <option value="Fixed-term">{t('forms.employment.fixedTerm')}</option>
+                <option value="Freelance">{t('forms.employment.freelance')}</option>
+                <option value="Part-time">{t('forms.employment.partTime')}</option>
+                <option value="Full-time">{t('forms.employment.fullTime')}</option>
               </select>
             </div>
 
-            <TextInput
-              label={t('forms.employment.occupation')}
-              name="occupation"
-              value={formData.occupation}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('placeholders.enterJobTitleOccupation')}
-            />
-          </div>
-
-          {/* Job Details */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              {t('forms.employment.jobDetails')}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput
-                label={t('forms.employment.employerName')}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.employment.employerName')} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
                 name="employer_name"
                 value={formData.employer_name}
                 onChange={handleInputChange}
-                disabled={!isEditMode}
                 required
-                placeholder={t('placeholders.enterEmployersName')}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.employment.employerNamePlaceholder')}
               />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('forms.employment.contractType')} <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="contract_type"
-                  value={formData.contract_type}
-                  onChange={handleInputChange}
-                  disabled={!isEditMode}
-                  required
-                  className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
-                >
-                  <option value="">{t('forms.employment.selectContractType')}</option>
-                  <option value="Permanent">{t('forms.employment.permanent')}</option>
-                  <option value="Temporary">{t('forms.employment.temporary')}</option>
-                  <option value="Fixed-term">{t('forms.employment.fixedTerm')}</option>
-                  <option value="Freelance">{t('forms.employment.freelance')}</option>
-                  <option value="Part-time">{t('forms.employment.partTime')}</option>
-                  <option value="Full-time">{t('forms.employment.fullTime')}</option>
-                </select>
-              </div>
-
-              <TextInput
-                label={t('forms.employment.contractDuration')}
-                name="contract_duration"
-                value={formData.contract_duration}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('placeholders.enterContractDuration')}
-              />
-
-              <TextInput
-                label={t('forms.employment.employedSince')}
-                name="employed_since"
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.employment.employedSince')} <span className="text-red-500">*</span>
+              </label>
+              <input
                 type="date"
+                name="employed_since"
                 value={formData.employed_since}
                 onChange={handleInputChange}
-                disabled={!isEditMode}
                 required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="px-4 py-2"
-            >
-              {existingEmploymentId && !isEditMode ? t('common.back') : t('common.cancel')}
-            </Button>
-
-            {isEditMode && (
-              <div className="flex gap-3">
-                <Button
-                  type="submit"
-                  loading={loading}
-                  size="sm"
-                  className="px-4 py-2"
-                >
-                  {existingEmploymentId ? t('common.update') : t('common.save')}
+      {/* Action Buttons */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          
+          <div className="flex items-center gap-3">
+            {!isEditMode ? (
+              <Button variant="outline" onClick={handleEdit}>
+                {t('common.edit')}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleCancel}>
+                  {t('common.cancel')}
                 </Button>
-                
-                {user?.role === 'CLIENT' && (
-                  <Button
-                    type="submit"
-                    loading={loading}
-                    variant="secondary"
-                    size="sm"
-                    className="px-4 py-2"
-                    onClick={() => {
-                      // This will trigger form submission and then navigate to next form
-                    }}
-                  >
-                    {t('placeholders.saveContinue')}
-                  </Button>
-                )}
-              </div>
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
             )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

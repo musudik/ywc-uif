@@ -309,32 +309,387 @@ export class PDFExporter {
     language?: string
   ): Promise<void> {
     try {
-      // Add logo
+      // Add logo first
       await this.addLogo();
-      
+
       // Add metadata page
       this.addMetadataPage(metadata, t);
-      
+
       // Add form content
       this.addSectionContent(sections, t);
-      
+
       // Add signature if provided
       if (signatureData) {
         await this.addSignature(signatureData, t);
       }
-      
+
       // Add footer to all pages
-      this.addFooter();
-      
-      // Generate filename
-      const fileName = `${metadata.formName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-      
+      const pageCount = (this.pdf as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        this.pdf.setPage(i);
+        this.addFooter();
+      }
+
       // Save the PDF
-      this.pdf.save(fileName);
+      const filename = `${metadata.formName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${metadata.submissionDate.replace(/\//g, '-')}.pdf`;
+      this.pdf.save(filename);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      throw new Error('Failed to generate PDF. Please try again.');
+      throw error;
     }
+  }
+
+  public async generateDualApplicantPDF(
+    metadata: FormMetadata,
+    sections: FormSectionData[],
+    signatures: { applicant1: string; applicant2: string },
+    t?: (key: string) => string,
+    language?: string,
+    formConfig?: any,
+    consentData?: Record<string, boolean>
+  ): Promise<void> {
+    try {
+      // Add logo first
+      await this.addLogo();
+
+      // Add metadata page
+      this.addMetadataPage(metadata, t);
+
+      // Add dual applicant content in table format
+      this.addDualApplicantContent(sections, t);
+
+      // Add consent section if provided
+      if (formConfig && consentData) {
+        this.addDualApplicantConsentSection(formConfig, consentData, t);
+      }
+
+      // Add dual signatures if provided
+      await this.addDualSignatures(signatures, t);
+
+      // Add footer to all pages
+      const pageCount = (this.pdf as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        this.pdf.setPage(i);
+        this.addFooter();
+      }
+
+      // Save the PDF
+      const filename = `dual_applicant_${metadata.formName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${metadata.submissionDate.replace(/\//g, '-')}.pdf`;
+      this.pdf.save(filename);
+    } catch (error) {
+      console.error('Error generating dual applicant PDF:', error);
+      throw error;
+    }
+  }
+
+  private addDualApplicantContent(sections: FormSectionData[], t?: (key: string) => string): void {
+    const translate = t || ((key: string) => key);
+    
+    this.pdf.addPage();
+    this.currentY = this.margin;
+
+    // Page title
+    this.pdf.setFontSize(18);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text(translate('forms.pdf.formContent') || 'Form Content', this.margin, this.currentY);
+    this.currentY += 15;
+
+    // Group sections by type (remove applicant suffixes for table format)
+    const groupedSections = this.groupSectionsByType(sections);
+
+    Object.entries(groupedSections).forEach(([sectionType, sectionData]) => {
+      this.addNewPageIfNeeded(40);
+
+      // Section title
+      this.pdf.setFontSize(14);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text(sectionType, this.margin, this.currentY);
+      this.currentY += 12;
+
+      // Table headers
+      this.addDualApplicantTableHeaders(translate);
+
+      // Table content
+      this.addDualApplicantTableContent(sectionData, translate);
+
+      this.currentY += 15; // Space between sections
+    });
+  }
+
+  private addDualApplicantConsentSection(formConfig: any, consentData: Record<string, boolean>, t?: (key: string) => string): void {
+    const translate = t || ((key: string) => key);
+    
+    if (!formConfig?.consent_forms || formConfig.consent_forms.length === 0 || !consentData) {
+      return;
+    }
+
+    this.addNewPageIfNeeded(60);
+
+    // Consent section title
+    this.pdf.setFontSize(16);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text(translate('forms.consent.title') || 'Consent Forms', this.margin, this.currentY);
+    this.currentY += 15;
+
+    formConfig.consent_forms.forEach((consentForm: any, index: number) => {
+      this.addNewPageIfNeeded(40);
+
+      // Consent form title
+      this.pdf.setFontSize(12);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text(consentForm.title, this.margin, this.currentY);
+      this.currentY += 8;
+
+      // Consent form content (truncated for PDF)
+      this.pdf.setFontSize(9);
+      this.pdf.setFont('helvetica', 'normal');
+      const contentLines = consentForm.content.split('\n').slice(0, 10); // First 10 lines only
+      contentLines.forEach((line: string) => {
+        if (line.trim()) {
+          const wrappedLines = this.pdf.splitTextToSize(line.trim(), this.pageWidth - 2 * this.margin);
+          wrappedLines.forEach((wrappedLine: string) => {
+            this.addNewPageIfNeeded(5);
+            this.pdf.text(wrappedLine, this.margin + 5, this.currentY);
+            this.currentY += 4;
+          });
+        }
+      });
+
+      if (consentForm.content.split('\n').length > 10) {
+        this.pdf.setFont('helvetica', 'italic');
+        this.pdf.text('... (content truncated for PDF)', this.margin + 5, this.currentY);
+        this.currentY += 6;
+      }
+
+      // Consent status
+      this.pdf.setFontSize(10);
+      this.pdf.setFont('helvetica', 'bold');
+      const consentGiven = consentData[`consent_${index}`] || false;
+      const statusText = consentGiven ? 
+        (translate('forms.pdf.consentGiven') || '✓ Consent Given') : 
+        (translate('forms.pdf.consentNotGiven') || '✗ Consent Not Given');
+      
+      this.pdf.setTextColor(consentGiven ? 0 : 255, consentGiven ? 128 : 0, 0);
+      this.pdf.text(statusText, this.margin + 5, this.currentY);
+      this.pdf.setTextColor(0, 0, 0); // Reset color
+      this.currentY += 15;
+    });
+  }
+
+  private groupSectionsByType(sections: FormSectionData[]): Record<string, { applicant1Fields: any[], applicant2Fields: any[] }> {
+    const grouped: Record<string, { applicant1Fields: any[], applicant2Fields: any[] }> = {};
+
+    sections.forEach(section => {
+      // Extract section type by removing applicant suffix
+      const sectionType = section.title.replace(/ - (Applicant [12]|Antragsteller [12]|Solicitante [12]).*$/, '');
+      
+      if (!grouped[sectionType]) {
+        grouped[sectionType] = { applicant1Fields: [], applicant2Fields: [] };
+      }
+
+      if (section.title.includes('Applicant 1') || section.title.includes('Antragsteller 1') || section.title.includes('Solicitante 1')) {
+        grouped[sectionType].applicant1Fields = section.fields;
+      } else if (section.title.includes('Applicant 2') || section.title.includes('Antragsteller 2') || section.title.includes('Solicitante 2')) {
+        grouped[sectionType].applicant2Fields = section.fields;
+      }
+    });
+
+    return grouped;
+  }
+
+  private addDualApplicantTableHeaders(translate: (key: string) => string): void {
+    const rowHeight = 8;
+    const col1Width = 70; // Field label column
+    const col2Width = 60; // Applicant 1 column  
+    const col3Width = 60; // Applicant 2 column
+
+    // Draw header background
+    this.pdf.setFillColor(240, 240, 240);
+    this.pdf.rect(this.margin, this.currentY, col1Width + col2Width + col3Width, rowHeight, 'F');
+
+    // Draw header borders
+    this.pdf.setLineWidth(0.3);
+    this.pdf.rect(this.margin, this.currentY, col1Width, rowHeight);
+    this.pdf.rect(this.margin + col1Width, this.currentY, col2Width, rowHeight);
+    this.pdf.rect(this.margin + col1Width + col2Width, this.currentY, col3Width, rowHeight);
+
+    // Header text
+    this.pdf.setFontSize(10);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor(0, 0, 0);
+
+    // Field label header
+    this.pdf.text('Field', this.margin + 2, this.currentY + 5.5);
+    
+    // Applicant headers
+    this.pdf.text(translate('forms.list.applicant1') || 'Applicant 1', this.margin + col1Width + 2, this.currentY + 5.5);
+    this.pdf.text(translate('forms.list.applicant2') || 'Applicant 2', this.margin + col1Width + col2Width + 2, this.currentY + 5.5);
+
+    this.currentY += rowHeight;
+  }
+
+  private addDualApplicantTableContent(sectionData: { applicant1Fields: any[], applicant2Fields: any[] }, translate: (key: string) => string): void {
+    const rowHeight = 8;
+    const col1Width = 70;
+    const col2Width = 60;
+    const col3Width = 60;
+
+    // Get all unique field labels from both applicants
+    const allFieldLabels = new Set<string>();
+    const fieldDataMap = new Map<string, { applicant1: any, applicant2: any }>();
+
+    // Process applicant 1 fields
+    sectionData.applicant1Fields.forEach(field => {
+      allFieldLabels.add(field.label);
+      fieldDataMap.set(field.label, { 
+        applicant1: field, 
+        applicant2: fieldDataMap.get(field.label)?.applicant2 
+      });
+    });
+
+    // Process applicant 2 fields
+    sectionData.applicant2Fields.forEach(field => {
+      allFieldLabels.add(field.label);
+      const existing = fieldDataMap.get(field.label);
+      fieldDataMap.set(field.label, { 
+        applicant1: existing?.applicant1, 
+        applicant2: field 
+      });
+    });
+
+    // Create table rows
+    Array.from(allFieldLabels).forEach((fieldLabel, index) => {
+      this.addNewPageIfNeeded(rowHeight + 2);
+
+      const fieldData = fieldDataMap.get(fieldLabel);
+      const isEvenRow = index % 2 === 0;
+
+      // Alternate row background
+      if (isEvenRow) {
+        this.pdf.setFillColor(250, 250, 250);
+        this.pdf.rect(this.margin, this.currentY, col1Width + col2Width + col3Width, rowHeight, 'F');
+      }
+
+      // Draw cell borders
+      this.pdf.setLineWidth(0.2);
+      this.pdf.setDrawColor(200, 200, 200);
+      this.pdf.rect(this.margin, this.currentY, col1Width, rowHeight);
+      this.pdf.rect(this.margin + col1Width, this.currentY, col2Width, rowHeight);
+      this.pdf.rect(this.margin + col1Width + col2Width, this.currentY, col3Width, rowHeight);
+
+      // Cell content
+      this.pdf.setFontSize(9);
+      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.setTextColor(0, 0, 0);
+
+      // Field label (bold)
+      this.pdf.setFont('helvetica', 'bold');
+      const labelText = this.pdf.splitTextToSize(fieldLabel, col1Width - 4);
+      this.pdf.text(labelText[0], this.margin + 2, this.currentY + 5.5);
+
+      // Applicant 1 value
+      this.pdf.setFont('helvetica', 'normal');
+      const app1Value = fieldData?.applicant1 ? 
+        this.formatFieldValue(fieldData.applicant1.value, fieldData.applicant1.type, translate) : 
+        (translate('forms.pdf.notProvided') || 'Not provided');
+      const app1Text = this.pdf.splitTextToSize(app1Value, col2Width - 4);
+      this.pdf.text(app1Text[0], this.margin + col1Width + 2, this.currentY + 5.5);
+
+      // Applicant 2 value  
+      const app2Value = fieldData?.applicant2 ? 
+        this.formatFieldValue(fieldData.applicant2.value, fieldData.applicant2.type, translate) : 
+        (translate('forms.pdf.notProvided') || 'Not provided');
+      const app2Text = this.pdf.splitTextToSize(app2Value, col3Width - 4);
+      this.pdf.text(app2Text[0], this.margin + col1Width + col2Width + 2, this.currentY + 5.5);
+
+      this.currentY += rowHeight;
+    });
+  }
+
+  private async addDualSignatures(signatures: { applicant1: string; applicant2: string }, t?: (key: string) => string): Promise<void> {
+    const translate = t || ((key: string) => key);
+    
+    if (!signatures.applicant1 && !signatures.applicant2) return;
+
+    this.pdf.addPage();
+    this.currentY = this.margin;
+
+    // Signatures section title
+    this.pdf.setFontSize(18);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text(translate('forms.dynamic.signatures') || 'Digital Signatures', this.margin, this.currentY);
+    this.currentY += 15;
+
+    const pageCenter = this.pageWidth / 2;
+    const signatureWidth = (this.pageWidth - 3 * this.margin) / 2;
+    const signatureHeight = 40;
+
+    // Applicant 1 Signature
+    if (signatures.applicant1) {
+      this.pdf.setFontSize(12);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text(translate('forms.list.applicant1') || 'Applicant 1', this.margin, this.currentY);
+      this.currentY += 8;
+
+      try {
+        this.pdf.addImage(
+          signatures.applicant1,
+          'PNG',
+          this.margin,
+          this.currentY,
+          signatureWidth,
+          signatureHeight
+        );
+      } catch (error) {
+        console.warn('Error adding applicant 1 signature to PDF:', error);
+        this.pdf.setFont('helvetica', 'italic');
+        this.pdf.text(translate('forms.pdf.signatureError') || 'Digital signature was provided but could not be rendered in PDF.', this.margin, this.currentY + 10);
+      }
+
+      // Signature date
+      this.pdf.setFontSize(10);
+      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.text(
+        `${translate('forms.pdf.signedOn') || 'Signed on'} ${new Date().toLocaleDateString()}`,
+        this.margin,
+        this.currentY + signatureHeight + 5
+      );
+    }
+
+    // Applicant 2 Signature
+    if (signatures.applicant2) {
+      const applicant2X = pageCenter + this.margin / 2;
+      
+      this.pdf.setFontSize(12);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text(translate('forms.list.applicant2') || 'Applicant 2', applicant2X, this.currentY);
+
+      try {
+        this.pdf.addImage(
+          signatures.applicant2,
+          'PNG',
+          applicant2X,
+          this.currentY + 8,
+          signatureWidth,
+          signatureHeight
+        );
+      } catch (error) {
+        console.warn('Error adding applicant 2 signature to PDF:', error);
+        this.pdf.setFont('helvetica', 'italic');
+        this.pdf.text(translate('forms.pdf.signatureError') || 'Digital signature was provided but could not be rendered in PDF.', applicant2X, this.currentY + 18);
+      }
+
+      // Signature date
+      this.pdf.setFontSize(10);
+      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.text(
+        `${translate('forms.pdf.signedOn') || 'Signed on'} ${new Date().toLocaleDateString()}`,
+        applicant2X,
+        this.currentY + signatureHeight + 13
+      );
+    }
+
+    this.currentY += signatureHeight + 20;
   }
 }
 
@@ -346,43 +701,114 @@ export function extractFormSections(
 ): FormSectionData[] {
   const sections: FormSectionData[] = [];
 
+  // Check if this is dual applicant data
+  const isDualApplicant = formData.applicant1 || formData.applicant2;
+
   if (formConfig?.sections) {
     formConfig.sections
       .sort((a: any, b: any) => a.order - b.order)
       .forEach((section: any) => {
-        const sectionData = formData[section.id] || {};
-        const fields: Array<{ label: string; value: any; type: string }> = [];
-
-        console.log(`🔍 Processing section: ${section.title}, has fields: ${!!(section.fields && section.fields.length > 0)}`);
-
-        // Process section fields
-        if (section.fields && section.fields.length > 0) {
-          console.log(`🔍 Using defined fields for section: ${section.title}`);
-          section.fields.forEach((field: any) => {
-            fields.push({
-              label: formatFieldLabel(field.name, t) || field.label || field.name,
-              value: sectionData[field.name],
-              type: field.type || 'text'
-            });
-          });
+        if (isDualApplicant) {
+          // Handle dual applicant structure
+          const applicant1Data = formData.applicant1 || {};
+          const applicant2Data = formData.applicant2 || {};
+          
+          // Create sections for both applicants
+          if (Object.keys(applicant1Data).length > 0) {
+            const fields1: Array<{ label: string; value: any; type: string }> = [];
+            
+            if (section.fields && section.fields.length > 0) {
+              section.fields.forEach((field: any) => {
+                fields1.push({
+                  label: formatFieldLabel(field.name, t) || field.label || field.name,
+                  value: applicant1Data[field.name],
+                  type: field.type || 'text'
+                });
+              });
+            } else {
+              Object.entries(applicant1Data).forEach(([key, value]) => {
+                fields1.push({
+                  label: formatFieldLabel(key, t),
+                  value: value,
+                  type: guessFieldType(key, value)
+                });
+              });
+            }
+            
+            if (fields1.length > 0) {
+              sections.push({
+                title: `${section.title} - ${t('forms.list.applicant1') || 'Applicant 1'}`,
+                description: section.description,
+                fields: fields1
+              });
+            }
+          }
+          
+          if (Object.keys(applicant2Data).length > 0) {
+            const fields2: Array<{ label: string; value: any; type: string }> = [];
+            
+            if (section.fields && section.fields.length > 0) {
+              section.fields.forEach((field: any) => {
+                fields2.push({
+                  label: formatFieldLabel(field.name, t) || field.label || field.name,
+                  value: applicant2Data[field.name],
+                  type: field.type || 'text'
+                });
+              });
+            } else {
+              Object.entries(applicant2Data).forEach(([key, value]) => {
+                fields2.push({
+                  label: formatFieldLabel(key, t),
+                  value: value,
+                  type: guessFieldType(key, value)
+                });
+              });
+            }
+            
+            if (fields2.length > 0) {
+              sections.push({
+                title: `${section.title} - ${t('forms.list.applicant2') || 'Applicant 2'}`,
+                description: section.description,
+                fields: fields2
+              });
+            }
+          }
         } else {
-          console.log(`🔍 Using hardcoded fields for section: ${section.title}`);
-          // Handle hardcoded sections (personal, family, etc.)
-          Object.entries(sectionData).forEach(([key, value]) => {
-            fields.push({
-              label: formatFieldLabel(key, t),
-              value: value,
-              type: guessFieldType(key, value)
-            });
-          });
-        }
+          // Handle single applicant structure (original logic)
+          const sectionData = formData[section.id] || {};
+          const fields: Array<{ label: string; value: any; type: string }> = [];
 
-        if (fields.length > 0) {
-          sections.push({
-            title: section.title,
-            description: section.description,
-            fields: fields
-          });
+          console.log(`🔍 Processing section: ${section.title}, has fields: ${!!(section.fields && section.fields.length > 0)}`);
+
+          // Process section fields
+          if (section.fields && section.fields.length > 0) {
+            console.log(`🔍 Using defined fields for section: ${section.title}`);
+            section.fields.forEach((field: any) => {
+              fields.push({
+                label: formatFieldLabel(field.name, t) || field.label || field.name,
+                value: sectionData[field.name],
+                type: field.type || 'text'
+              });
+            });
+          } else {
+            console.log(`🔍 Using hardcoded fields for section: ${section.title}`);
+            // Handle hardcoded sections (personal, family, etc.)
+            Object.entries(sectionData).forEach(([key, value]) => {
+              fields.push({
+                label: formatFieldLabel(key, t),
+                value: value,
+                type: guessFieldType(key, value)
+              });
+            });
+          }
+
+          if (fields.length > 0) {
+            sections.push({
+              title: section.title,
+              description: section.description,
+              fields: fields
+            });
+          }
         }
       });
   }

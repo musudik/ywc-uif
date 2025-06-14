@@ -9,6 +9,7 @@ import TextInput from '../../components/ui/TextInput';
 import type { FamilyMember, FamilyRelation } from '../../types';
 
 interface FamilyMemberFormData {
+  user_id: string;
   first_name: string;
   last_name: string;
   relation: FamilyRelation;
@@ -34,6 +35,7 @@ export default function FamilyDetailsForm() {
   const [showAddForm, setShowAddForm] = useState(false);
 
   const [formData, setFormData] = useState<FamilyMemberFormData>({
+    user_id: '',
     first_name: '',
     last_name: '',
     relation: 'Spouse',
@@ -103,6 +105,7 @@ export default function FamilyDetailsForm() {
 
   const resetForm = () => {
     setFormData({
+      user_id: '',
       first_name: '',
       last_name: '',
       relation: 'Spouse',
@@ -122,6 +125,7 @@ export default function FamilyDetailsForm() {
     setEditingMemberId(member.family_member_id);
     setShowAddForm(true);
     setFormData({
+      user_id: member.user_id,
       first_name: member.first_name,
       last_name: member.last_name,
       relation: member.relation,
@@ -195,9 +199,7 @@ export default function FamilyDetailsForm() {
     
     // Navigate to the next form based on user role
     const userIdToUse = getUserId();
-    if (user?.role === 'CLIENT') {
-      navigate(`/dashboard/forms/employment?personal_id=${userIdToUse}`);
-    }
+    navigate(`/dashboard/forms/employment?personal_id=${userIdToUse}`);
   };
 
   if (dataLoading) {
@@ -214,214 +216,191 @@ export default function FamilyDetailsForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="container mx-auto p-6 space-y-6">
+
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {t('forms.familyDetails.title')}
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Family Members List */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+        <div className="border-b border-gray-200 dark:border-gray-600 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {t('forms.familyDetails.title')} {familyMembers.length > 0 ? (isEditMode ? t('forms.familyDetails.editing') : t('forms.familyDetails.viewing')) : t('forms.familyDetails.new')}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {isEditMode 
-                  ? t('forms.familyDetails.subtitle')
-                  : t('forms.familyDetails.viewSubtitle')
-                }
-              </p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {t('forms.familyDetails.familyMembers')}
+              </h3>
             </div>
-            {!isEditMode && familyMembers.length > 0 && (
+            {!isEditMode && (
               <Button onClick={handleEdit} variant="outline">
-                {t('common.edit')}
+                {t('forms.familyDetails.addMember')}
               </Button>
             )}
           </div>
         </div>
 
         <div className="p-6">
-          {/* Family Members List */}
-          {familyMembers.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Family Members ({familyMembers.length})
-              </h3>
-              <div className="space-y-4">
-                {familyMembers.map((member) => (
-                  <div key={member.family_member_id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {member.first_name} {member.last_name}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Relation: {member.relation}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Birth Date: {new Date(member.birth_date).toLocaleDateString()}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Nationality: {member.nationality}
-                            </p>
-                          </div>
-                          <div>
-                            {member.tax_id && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Tax ID: {member.tax_id}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      {isEditMode && (
-                        <div className="flex space-x-2 ml-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditMember(member)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteMember(member.family_member_id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      )}
+          {familyMembers.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              {t('forms.familyDetails.noMembers')}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {familyMembers.map((member, index) => (
+                <div key={index} className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white">
+                        {member.first_name} {member.last_name}
+                      </h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t(`forms.familyDetails.${member.relation.toLowerCase()}`)}
+                      </p>
                     </div>
+                    {isEditMode && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditMember(member)}
+                        >
+                          {t('common.edit')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteMember(member.family_member_id)}
+                          className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          {t('common.delete')}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add/Edit Family Member Form */}
+      {isEditMode && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+          <div className="border-b border-gray-200 dark:border-gray-600 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {editingMemberId === null ? t('forms.familyDetails.addMember') : t('forms.familyDetails.editMember')}
+                </h3>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Add Family Member Button */}
-          {isEditMode && !showAddForm && (
-            <div className="mb-6">
-              <Button onClick={handleAddMember} variant="outline" className="w-full">
-                + Add Family Member
-              </Button>
-            </div>
-          )}
-
-          {/* Add/Edit Family Member Form */}
-          {showAddForm && (
-            <form onSubmit={handleSubmit} className="space-y-6 border border-gray-200 dark:border-gray-600 rounded-lg p-6 mb-6">
-              <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                {editingMemberId ? 'Edit Family Member' : 'Add New Family Member'}
-              </h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <TextInput
-                  label="First Name *"
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.familyDetails.firstNameRequired')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter first name"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
 
-                <TextInput
-                  label="Last Name *"
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.familyDetails.lastNameRequired')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter last name"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
 
-                <div className="md:col-span-2">
-                  <label htmlFor="relation" className="block text-sm font-medium text-gray-900 dark:text-white">
-                    Relation *
-                  </label>
-                  <select
-                    id="relation"
-                    name="relation"
-                    value={formData.relation}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-gray-900 dark:text-gray-300"
-                  >
-                    {relationOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.familyDetails.relation')} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="relation"
+                  value={formData.relation}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">{t('forms.familyDetails.selectRelation')}</option>
+                  <option value="Spouse">{t('forms.familyDetails.spouse')}</option>
+                  <option value="Child">{t('forms.familyDetails.child')}</option>
+                  <option value="Parent">{t('forms.familyDetails.parent')}</option>
+                  <option value="Other">{t('forms.familyDetails.other')}</option>
+                </select>
+              </div>
 
-                <TextInput
-                  label="Birth Date *"
-                  name="birth_date"
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.familyDetails.birthDateRequired')} <span className="text-red-500">*</span>
+                </label>
+                <input
                   type="date"
+                  name="birth_date"
                   value={formData.birth_date}
                   onChange={handleInputChange}
                   required
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
 
-                <TextInput
-                  label="Nationality *"
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                  {t('forms.familyDetails.nationalityRequired')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
                   name="nationality"
                   value={formData.nationality}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter nationality"
-                />
-
-                <TextInput
-                  label="Tax ID"
-                  name="tax_id"
-                  value={formData.tax_id}
-                  onChange={handleInputChange}
-                  placeholder="Enter tax ID (optional)"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              <div className="flex space-x-4">
-                <Button type="submit" loading={loading}>
-                  {editingMemberId ? 'Update Member' : 'Add Member'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingMemberId(null);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-            >
-              {familyMembers.length > 0 && !isEditMode ? 'Back' : 'Cancel'}
-            </Button>
-
-            {!isEditMode && familyMembers.length > 0 && (
-              <Button onClick={handleContinue}>
-                Continue to Employment Details
+      {/* Action Buttons */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {!isEditMode ? (
+              <Button variant="outline" onClick={handleEdit}>
+                {t('common.edit')}
               </Button>
-            )}
-
-            {isEditMode && !showAddForm && familyMembers.length > 0 && (
-              <Button onClick={handleContinue}>
-                Save & Continue
-              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleCancel}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
             )}
           </div>
         </div>

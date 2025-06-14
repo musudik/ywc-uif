@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 // Replit assigns PORT automatically — use that.
-const PORT = (process as any).env.PORT || 3000;
+const PORT = (process as any).env.PORT || 5173;
 
 export default defineConfig({
   plugins: [react()],

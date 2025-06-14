@@ -22,6 +22,7 @@ export default function IncomeForm() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [formData, setFormData] = useState({
+    user_id: '',
     gross_income: 0,
     net_income: 0,
     tax_class: '',
@@ -34,10 +35,14 @@ export default function IncomeForm() {
     income_side_job: 0,
   });
 
+  const getUserId = () => {
+    return personalId || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
+  };
+
   useEffect(() => {
     const loadExistingData = async () => {
       // Determine which personal ID to use: URL param 'id', URL query 'personal_id', or user's own ID for clients
-      const userIdToLoad = (user?.role === 'CLIENT' ? user?.id : null);
+      const userIdToLoad = getUserId();
       
       if (userIdToLoad) {
         setDataLoading(true);
@@ -45,6 +50,7 @@ export default function IncomeForm() {
           const incomeDetails = await formService.getIncomeById(userIdToLoad);
           if (incomeDetails) {
             setFormData({
+              user_id: incomeDetails.user_id,
               gross_income: incomeDetails.gross_income,
               net_income: incomeDetails.net_income,
               tax_class: incomeDetails.tax_class,
@@ -116,7 +122,7 @@ export default function IncomeForm() {
 
       let incomeDetails;
       
-      if (existingIncomeId) {
+      if (formData.user_id) {
         // Update existing record
         incomeDetails = await formService.updateIncome(existingIncomeId, formDataForAPI);
         showSuccess(t('forms.income.incomeUpdated'), t('forms.income.incomeUpdatedMessage'));
@@ -130,9 +136,7 @@ export default function IncomeForm() {
       }
       
       // Navigate based on user role, passing the personal_id
-      if (user?.role === 'CLIENT') {
-        navigate(`/dashboard/forms/expenses?personal_id=${userIdToUse}`);
-      }
+      navigate(`/dashboard/forms/expenses?personal_id=${userIdToUse}`);
     } catch (error) {
       showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save income details');
     } finally {
@@ -154,204 +158,156 @@ export default function IncomeForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {t('forms.income.title')}
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Income Details Form */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+        <div className="border-b border-gray-200 dark:border-gray-600 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {t('forms.income.title')} {existingIncomeId ? (isEditMode ? t('forms.income.editing') : t('forms.income.viewing')) : t('forms.income.new')}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {isEditMode 
-                  ? existingIncomeId 
-                    ? t('forms.income.updateInfo')
-                    : t('forms.income.subtitle')
-                  : t('forms.income.viewInfo')
-                }
-              </p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {t('forms.income.title')}
+              </h3>
             </div>
-            {!isEditMode && existingIncomeId && (
-              <Button onClick={handleEdit} variant="outline">
-                {t('common.edit')}
-              </Button>
-            )}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Primary Income */}
+        <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <TextInput
-              label={t('forms.income.grossIncome')}
-              name="gross_income"
-              type="number"
-              step="0.01"
-              value={formData.gross_income.toString()}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('forms.income.monthlyAmount')}
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.income.grossIncome')} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="gross_income"
+                value={formData.gross_income}
+                onChange={handleInputChange}
+                required
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.income.monthlyAmount')}
+              />
+            </div>
 
-            <TextInput
-              label={t('forms.income.netIncome')}
-              name="net_income"
-              type="number"
-              step="0.01"
-              value={formData.net_income.toString()}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('forms.income.monthlyAmount')}
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.income.netIncome')} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="net_income"
+                value={formData.net_income}
+                onChange={handleInputChange}
+                required
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.income.monthlyAmount')}
+              />
+            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('forms.income.taxClass')} <span className="text-red-500">*</span>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.income.taxClass')}
               </label>
               <select
                 name="tax_class"
                 value={formData.tax_class}
                 onChange={handleInputChange}
-                disabled={!isEditMode}
-                required
-                className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">{t('forms.income.selectTaxClass')}</option>
-                <option value="1">Class 1 - Single, divorced, widowed</option>
-                <option value="2">Class 2 - Single parent with child allowance</option>
-                <option value="3">Class 3 - Married, higher income</option>
-                <option value="4">Class 4 - Married, both working equally</option>
-                <option value="5">Class 5 - Married, lower income</option>
-                <option value="6">Class 6 - Second job</option>
+                <option value="1">{t('forms.income.class1')}</option>
+                <option value="2">{t('forms.income.class2')}</option>
+                <option value="3">{t('forms.income.class3')}</option>
+                <option value="4">{t('forms.income.class4')}</option>
+                <option value="5">{t('forms.income.class5')}</option>
+                <option value="6">{t('forms.income.class6')}</option>
               </select>
             </div>
 
-            <TextInput
-              label={t('forms.income.taxIdField')}
-              name="tax_id"
-              value={formData.tax_id}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder={t('placeholders.enterTaxId')}
-            />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.income.numberOfSalaries')}
+              </label>
+              <input
+                type="number"
+                name="number_of_salaries"
+                value={formData.number_of_salaries}
+                onChange={handleInputChange}
+                min="12"
+                max="14"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-            <TextInput
-              label={t('forms.income.numberOfSalaries')}
-              name="number_of_salaries"
-              type="number"
-              min="12"
-              max="14"
-              value={formData.number_of_salaries.toString()}
-              onChange={handleInputChange}
-              disabled={!isEditMode}
-              required
-              placeholder="Usually 12, 13, or 14"
-            />
-          </div>
-
-          {/* Additional Income Sources */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Additional Income Sources
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput
-                label={t('forms.income.childBenefit')}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.income.childBenefit')}
+              </label>
+              <input
+                type="number"
                 name="child_benefit"
-                type="number"
-                step="0.01"
-                value={formData.child_benefit.toString()}
+                value={formData.child_benefit}
                 onChange={handleInputChange}
-                disabled={!isEditMode}
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder={t('forms.income.monthlyAmount')}
               />
+            </div>
 
-              <TextInput
-                label={t('forms.income.otherIncome')}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.income.otherIncome')}
+              </label>
+              <input
+                type="number"
                 name="other_income"
-                type="number"
-                step="0.01"
-                value={formData.other_income.toString()}
+                value={formData.other_income}
                 onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.income.monthlyAmount')}
-              />
-
-              <TextInput
-                label={t('forms.income.incomeTradeBusiness')}
-                name="income_trade_business"
-                type="number"
                 step="0.01"
-                value={formData.income_trade_business.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.income.monthlyAmount')}
-              />
-
-              <TextInput
-                label={t('forms.income.incomeSelfEmployed')}
-                name="income_self_employed_work"
-                type="number"
-                step="0.01"
-                value={formData.income_self_employed_work.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.income.monthlyAmount')}
-              />
-
-              <TextInput
-                label={t('forms.income.incomeSideJob')}
-                name="income_side_job"
-                type="number"
-                step="0.01"
-                value={formData.income_side_job.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder={t('forms.income.monthlyAmount')}
               />
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="px-4 py-2"
-            >
-              {existingIncomeId && !isEditMode ? t('common.back') : t('common.cancel')}
-            </Button>
-
-            {isEditMode && (
-              <div className="flex gap-3">
-                <Button
-                  type="submit"
-                  loading={loading}
-                  size="sm"
-                  className="px-4 py-2"
-                >
-                  {existingIncomeId ? t('common.update') : t('common.save')}
+      {/* Action Buttons */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          
+          <div className="flex items-center gap-3">
+            {!isEditMode ? (
+              <Button variant="outline" onClick={handleEdit}>
+                {t('common.edit')}
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleCancel}>
+                  {t('common.cancel')}
                 </Button>
-                
-                {user?.role === 'CLIENT' && (
-                  <Button
-                    type="submit"
-                    loading={loading}
-                    variant="secondary"
-                    size="sm"
-                    className="px-4 py-2"
-                  >
-                    {t('placeholders.saveContinue')}
-                  </Button>
-                )}
-              </div>
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
             )}
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ export default function AssetsForm() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [formData, setFormData] = useState({
+    user_id: '',
     real_estate: 0,
     securities: 0,
     bank_deposits: 0,
@@ -30,17 +31,23 @@ export default function AssetsForm() {
     other_assets: 0,
   });
 
+  const getUserId = () => {
+    return personalId || personalIdFromParams || (user?.role === 'CLIENT' ? user?.id : null);
+  };
+
   useEffect(() => {
     const loadExistingData = async () => {
       // Determine which personal ID to use: URL param 'id', URL query 'personal_id', or user's own ID for clients
-      const userIdToLoad = (user?.role === 'CLIENT' ? user?.id : null);
+      const userIdToLoad = getUserId();
       
       if (userIdToLoad) {
         setDataLoading(true);
         try {
-          const assetDetails = await formService.getAssetById(userIdToLoad);
-          if (assetDetails) {
+          const assetDetailsList = await formService.getAssetsByUserId(userIdToLoad);
+          if (assetDetailsList) {
+            const assetDetails = assetDetailsList[0];
             setFormData({
+              user_id: assetDetails.user_id,
               real_estate: assetDetails.real_estate,
               securities: assetDetails.securities,
               bank_deposits: assetDetails.bank_deposits,
@@ -108,7 +115,7 @@ export default function AssetsForm() {
 
       let assetDetails;
       
-      if (existingAssetId) {
+      if (formData.user_id) {
         // Update existing record
         assetDetails = await formService.updateAsset(existingAssetId, formDataForAPI);
         showSuccess(t('forms.assets.assetsUpdated'), t('forms.assets.assetsUpdatedMessage'));
@@ -122,9 +129,7 @@ export default function AssetsForm() {
       }
       
       // Navigate based on user role, passing the personal_id
-      if (user?.role === 'CLIENT') {
-        navigate(`/dashboard/forms/liabilities?personal_id=${userIdToUse}`);
-      }
+      navigate(`/dashboard/forms/liabilities?personal_id=${userIdToUse}`);
     } catch (error) {
       showError(t('notifications.saveFailed'), error instanceof Error ? error.message : 'Failed to save asset details');
     } finally {
@@ -134,8 +139,8 @@ export default function AssetsForm() {
 
   if (dataLoading) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="container mx-auto p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
           <div className="p-6 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             <span className="ml-3 text-gray-600 dark:text-gray-400">{t('common.loading')}</span>
@@ -146,143 +151,148 @@ export default function AssetsForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {t('forms.assets.title')}
+            </h1>
+          </div>
+        </div>
+      </div>
+      {/* Asset Portfolio Form */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+        <div className="border-b border-gray-200 dark:border-gray-600 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {t('forms.assets.title')} {existingAssetId ? (isEditMode ? t('forms.assets.editing') : t('forms.assets.viewing')) : t('forms.assets.new')}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                {isEditMode 
-                  ? existingAssetId 
-                    ? t('forms.assets.updateInfo')
-                    : t('forms.assets.subtitle')
-                  : t('forms.assets.viewInfo')
-                }
-              </p>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                {t('forms.assets.title')}
+              </h3>
             </div>
-            {!isEditMode && existingAssetId && (
-              <Button onClick={handleEdit} variant="outline">
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.assets.realEstate')}
+              </label>
+              <input
+                type="number"
+                name="real_estate"
+                value={formData.real_estate}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.assets.currentValue')}
+                disabled={!isEditMode}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.assets.securities')}
+              </label>
+              <input
+                type="number"
+                name="securities"
+                value={formData.securities}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.assets.currentValue')}
+                disabled={!isEditMode}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.assets.bankDeposits')}
+              </label>
+              <input
+                type="number"
+                name="bank_deposits"
+                value={formData.bank_deposits}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.assets.currentValue')}
+                disabled={!isEditMode}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.assets.buildingSavings')}
+              </label>
+              <input
+                type="number"
+                name="building_savings"
+                value={formData.building_savings}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.assets.currentValue')}
+                disabled={!isEditMode}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.assets.insuranceValues')}
+              </label>
+              <input
+                type="number"
+                name="insurance_values"
+                value={formData.insurance_values}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.assets.currentValue')}
+                disabled={!isEditMode}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+                {t('forms.assets.otherAssets')}
+              </label>
+              <input
+                type="number"
+                name="other_assets"
+                value={formData.other_assets}
+                onChange={handleInputChange}
+                step="0.01"
+                min="0"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('forms.assets.currentValue')}
+                disabled={!isEditMode}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Action Buttons */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {!isEditMode ? (
+              <Button variant="outline" onClick={handleEdit}>
                 {t('common.edit')}
               </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleCancel}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleSubmit} disabled={loading}>
+                  {loading ? t('common.saving') : t('common.save')}
+                </Button>
+              </>
             )}
           </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Asset Portfolio */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Asset Portfolio
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInput
-                label={t('forms.assets.realEstate')}
-                name="real_estate"
-                type="number"
-                step="0.01"
-                value={formData.real_estate.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.assets.currentValue')}
-              />
-
-              <TextInput
-                label={t('forms.assets.securities')}
-                name="securities"
-                type="number"
-                step="0.01"
-                value={formData.securities.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.assets.currentValue')}
-              />
-
-              <TextInput
-                label={t('forms.assets.bankDeposits')}
-                name="bank_deposits"
-                type="number"
-                step="0.01"
-                value={formData.bank_deposits.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.assets.currentValue')}
-              />
-
-              <TextInput
-                label={t('forms.assets.buildingSavings')}
-                name="building_savings"
-                type="number"
-                step="0.01"
-                value={formData.building_savings.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.assets.currentValue')}
-              />
-
-              <TextInput
-                label={t('forms.assets.insuranceValues')}
-                name="insurance_values"
-                type="number"
-                step="0.01"
-                value={formData.insurance_values.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.assets.currentValue')}
-              />
-
-              <TextInput
-                label={t('forms.assets.otherAssets')}
-                name="other_assets"
-                type="number"
-                step="0.01"
-                value={formData.other_assets.toString()}
-                onChange={handleInputChange}
-                disabled={!isEditMode}
-                placeholder={t('forms.assets.currentValue')}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-700">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="px-4 py-2"
-            >
-              {existingAssetId && !isEditMode ? t('common.back') : t('common.cancel')}
-            </Button>
-
-            {isEditMode && (
-              <div className="flex gap-3">
-                <Button
-                  type="submit"
-                  loading={loading}
-                  size="sm"
-                  className="px-4 py-2"
-                >
-                  {existingAssetId ? t('common.update') : t('common.save')}
-                </Button>
-                
-                {user?.role === 'CLIENT' && (
-                  <Button
-                    type="submit"
-                    loading={loading}
-                    variant="secondary"
-                    size="sm"
-                    className="px-4 py-2"
-                  >
-                    {t('placeholders.saveContinue')}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </form>
       </div>
     </div>
   );

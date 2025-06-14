@@ -54,8 +54,9 @@ export default function ClientDashboard() {
 
         // Check Family Details
         try {
-          await formService.getFamilyMembersByUserId(userId);
-          progressStatus.familyDetails = true;
+          const familyDetails = await formService.getFamilyMembersByUserId(userId);
+          console.log('Family details:', familyDetails);
+          progressStatus.familyDetails = familyDetails ? true : false;
         } catch (error) {
           console.log('Family details not found');
         }
@@ -78,7 +79,7 @@ export default function ClientDashboard() {
 
         // Check Expenses
         try {
-          const expenses = await formService.getExpensesById(userId);
+          const expenses = await formService.getExpensesByUserId(userId);
           progressStatus.expenses = expenses ? true : false;
         } catch (error) {
           console.log('Expenses details not found');
@@ -149,8 +150,8 @@ export default function ClientDashboard() {
 
             // Check Family Details
             try {
-              await formService.getFamilyMembersByUserId(userId);
-              progressStatus.familyDetails = true;
+              const familyDetails = await formService.getFamilyMembersByUserId(userId);
+              progressStatus.familyDetails = familyDetails ? true : false;
             } catch (error) {
               console.log('Family details not found');
             }
@@ -172,7 +173,7 @@ export default function ClientDashboard() {
 
             // Check Expenses
             try {
-              const expenses = await formService.getExpensesById(userId);
+              const expenses = await formService.getExpensesByUserId(userId);
               progressStatus.expenses = expenses ? true : false;
             } catch (error) {
               console.log('Expenses details not found');
@@ -409,9 +410,9 @@ export default function ClientDashboard() {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {t('dashboard.client.completeProfileMessage')}
             </p>
-            <Button variant="outline">
+            {/* <Button variant="outline">
               {t('dashboard.client.viewFinancialSummary')}
-            </Button>
+            </Button> */}
           </div>
         )}
       </div>

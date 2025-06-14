@@ -198,14 +198,6 @@ export class FormService {
     throw new Error(response.message || 'Failed to get all expenses details');
   }
 
-  async getExpensesById(expensesId: string): Promise<ExpensesDetails> {
-    const response = await apiService.get<ExpensesDetails>(`/expenses/${expensesId}`);
-    if (response.success && response.data) {
-      return response.data;
-    }
-    throw new Error(response.message || 'Failed to get expenses details');
-  }
-
   async getExpensesByUserId(userId: string): Promise<ExpensesDetails[]> {
     const response = await apiService.get<ExpensesDetails[]>(`/expenses/${userId}`);
     if (response.success && response.data) {
@@ -214,16 +206,16 @@ export class FormService {
     throw new Error(response.message || 'Failed to get expenses details');
   }
 
-  async updateExpenses(expensesId: string, data: Partial<ExpensesDetails>): Promise<ExpensesDetails> {
-    const response = await apiService.put<ExpensesDetails>(`/expenses/${expensesId}`, data);
+  async updateExpenses(userId: string, data: Partial<ExpensesDetails>): Promise<ExpensesDetails> {
+    const response = await apiService.put<ExpensesDetails>(`/expenses/${userId}`, data);
     if (response.success && response.data) {
       return response.data;
     }
     throw new Error(response.message || 'Failed to update expenses details');
   }
 
-  async deleteExpenses(expensesId: string): Promise<void> {
-    const response = await apiService.delete(`/expenses/${expensesId}`);
+  async deleteExpenses(userId: string): Promise<void> {
+    const response = await apiService.delete(`/expenses/${userId}`);
     if (!response.success) {
       throw new Error(response.message || 'Failed to delete expenses details');
     }
@@ -369,6 +361,7 @@ export class FormService {
 
   async getFamilyMemberById(familyMemberId: string): Promise<FamilyMember> {
     const response = await apiService.get<FamilyMember>(`/family-members/${familyMemberId}`);
+    console.log('Family member:', response);
     if (response.success && response.data) {
       return response.data;
     }

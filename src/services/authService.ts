@@ -133,10 +133,10 @@ export class AuthService {
     last_name: string;
     email: string;
   }>> {
-    // For now, we'll return mock data since there's no dedicated coaches endpoint
-    // In a real implementation, this would call a /users?role=COACH endpoint
+    // For now, we'll return mock data since there's no dedicated clients endpoint
+    // In a real implementation, this would call a /users?role=CLIENT endpoint
     try {
-      // Try to get users with COACH role - this endpoint may not exist yet
+      // Try to get users with CLIENT role - this endpoint may not exist yet
       const response = await apiService.get<Array<{
         id: string;
         first_name: string;
