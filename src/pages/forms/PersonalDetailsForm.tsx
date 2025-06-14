@@ -311,9 +311,9 @@ export default function PersonalDetailsForm() {
                   className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('forms.personalDetails.selectSalutation')}</option>
-                  <option value="Mr.">{t('forms.personalDetails.mr')}</option>
-                  <option value="Ms.">{t('forms.personalDetails.ms')}</option>
-                  <option value="Dr.">{t('forms.personalDetails.dr')}</option>
+                  <option value="Mr">{t('forms.personalDetails.mr')}</option>
+                  <option value="Ms">{t('forms.personalDetails.ms')}</option>
+                  <option value="Dr">{t('forms.personalDetails.dr')}</option>
                 </select>
               </div>
 
@@ -470,7 +470,7 @@ export default function PersonalDetailsForm() {
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-900 dark:text-white">
-                  {t('forms.personalDetails.housing')} <span className="text-red-500">*</span>
+                  {t('forms.personalDetails.housingSituation')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="housing"
@@ -480,10 +480,10 @@ export default function PersonalDetailsForm() {
                   required
                   className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">{t('forms.personalDetails.selectHousing')}</option>
-                  <option value="Owner">{t('forms.personalDetails.owned')}</option>
-                  <option value="Renter">{t('forms.personalDetails.rented')}</option>
-                  <option value="Living with family">{t('forms.personalDetails.livingWithParents')}</option>
+                  <option value="">{t('forms.personalDetails.selectHousingSituation')}</option>
+                  <option value="Owner">{t('forms.personalDetails.owner')}</option>
+                  <option value="Renter">{t('forms.personalDetails.renter')}</option>
+                  <option value="Living with family">{t('forms.personalDetails.livingWithFamily')}</option>
                   <option value="Other">{t('forms.personalDetails.other')}</option>
                 </select>
               </div>
