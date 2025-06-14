@@ -157,6 +157,8 @@ export interface EmploymentDetails {
   contract_duration: string;
   employer_name: string;
   employed_since: string; // ISO string
+  employer_address: string; // TODO: add this field 
+  employer_phone: string; // TODO: add this field 
   created_at: Date;
   updated_at: Date;
 }

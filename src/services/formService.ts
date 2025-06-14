@@ -198,7 +198,7 @@ export class FormService {
     throw new Error(response.message || 'Failed to get all expenses details');
   }
 
-  async getExpensesByUserId(userId: string): Promise<ExpensesDetails[]> {
+  async getExpensesByUserId(userId: string): Promise<ExpensesDetails[]> { 
     const response = await apiService.get<ExpensesDetails[]>(`/expenses/${userId}`);
     if (response.success && response.data) {
       return response.data;

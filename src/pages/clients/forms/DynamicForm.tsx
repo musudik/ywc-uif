@@ -1094,13 +1094,16 @@ export default function DynamicForm() {
             }
           } else if (sectionTitle.includes('expenses')) {
             try {
-              const expensesDetails = await formService.getExpensesById(userIdToLoad);
+              const expensesDetailsList = await formService.getExpensesByUserId(userIdToLoad);
+              if (expensesDetailsList && expensesDetailsList.length > 0) {
+                const expensesDetails = expensesDetailsList[0];
               sectionData = {
                 cold_rent: expensesDetails.cold_rent || 0,
                 electricity: expensesDetails.electricity || 0,
                 living_expenses: expensesDetails.living_expenses || 0,
-                other_expenses: expensesDetails.other_expenses || 0,
-              };
+                  other_expenses: expensesDetails.other_expenses || 0,
+                };
+              }
             } catch (error) {
               console.log('Expenses data not found, trying alternative method');
               try {

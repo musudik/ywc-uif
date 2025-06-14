@@ -59,7 +59,7 @@ export default function AdminDashboard() {
             { service: () => formService.getFamilyMembersByUserId(userId), name: t('dashboard.client.familyInfo') },
             { service: () => formService.getEmploymentById(userId), name: t('dashboard.client.employmentDetails') },
             { service: () => formService.getIncomeById(userId), name: t('dashboard.client.incomeDetails') },
-            { service: () => formService.getExpensesById(userId), name: t('dashboard.client.monthlyExpenses') },
+            { service: () => formService.getExpensesByUserId(userId), name: t('dashboard.client.monthlyExpenses') },
             { service: () => formService.getAssetById(userId), name: t('dashboard.client.assetsInvestments') },
             { service: () => formService.getLiabilityById(userId), name: t('dashboard.client.debtsLiabilities') }
           ];
