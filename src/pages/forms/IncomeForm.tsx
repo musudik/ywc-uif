@@ -244,12 +244,12 @@ export default function IncomeForm() {
                 className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">{t('forms.income.selectTaxClass')}</option>
-                <option value="1">{t('forms.income.class1')}</option>
-                <option value="2">{t('forms.income.class2')}</option>
-                <option value="3">{t('forms.income.class3')}</option>
-                <option value="4">{t('forms.income.class4')}</option>
-                <option value="5">{t('forms.income.class5')}</option>
-                <option value="6">{t('forms.income.class6')}</option>
+                <option value="I">{t('forms.income.class1')}</option>
+                <option value="II">{t('forms.income.class2')}</option>
+                <option value="III">{t('forms.income.class3')}</option>
+                <option value="IV">{t('forms.income.class4')}</option>
+                <option value="V">{t('forms.income.class5')}</option>
+                <option value="VI">{t('forms.income.class6')}</option>
               </select>
             </div>
 

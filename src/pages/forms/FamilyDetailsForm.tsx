@@ -7,6 +7,7 @@ import { formService } from '../../services/formService';
 import Button from '../../components/ui/Button';
 import TextInput from '../../components/ui/TextInput';
 import type { FamilyMember, FamilyRelation } from '../../types';
+import { formatDateForInput } from '../../utils/dateUtils';
 
 interface FamilyMemberFormData {
   user_id: string;
@@ -272,10 +273,19 @@ export default function FamilyDetailsForm() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium text-gray-900 dark:text-white">
-                        {member.first_name} {member.last_name}
+                      {t('forms.familyDetails.name')}: {member.first_name} {member.last_name}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {t(`forms.familyDetails.${member.relation.toLowerCase()}`)}
+                      {t('forms.familyDetails.relation')}: {t(`forms.familyDetails.${member.relation.toLowerCase()}`)}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('forms.familyDetails.birthDateRequired')}: {formatDateForInput(member.birth_date)}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('forms.familyDetails.nationalityRequired')}: {member.nationality}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('forms.familyDetails.taxIdOptional')}: {member.tax_id}
                       </p>
                     </div>
                     {isEditMode && (

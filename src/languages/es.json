@@ -296,6 +296,7 @@
       "addFamilyMember": "Agregar Miembro de la Familia",
       "addNewFamilyMember": "Agregar Nuevo Miembro de la Familia",
       "editFamilyMember": "Editar Miembro de la Familia",
+      "name": "Nombre",
       "firstNameRequired": "Nombre",
       "lastNameRequired": "Apellido",
       "relationRequired": "Relación",
