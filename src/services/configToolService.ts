@@ -59,6 +59,7 @@ export interface FormConfigurationData {
   applicantconfig?: string;
   sections: Section[];
   consent_forms: ConsentForm[];
+  consent_form?: ConsentForm[]; // Backend sometimes uses singular form
   documents: Document[];
   is_active: boolean;
   allowedRoles?: UserRole[];

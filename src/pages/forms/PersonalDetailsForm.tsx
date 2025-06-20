@@ -168,7 +168,7 @@ export default function PersonalDetailsForm() {
         try {
           // For now, we'll use the getCoachClients endpoint to get coach info
           // In a real implementation, there should be a separate endpoint to get all coaches
-          const coaches = await authService.getCoachClients();
+          const coaches = await authService.getCoachClients(user?.id || '');
           setAvailableCoaches(coaches);
         } catch (error) {
           console.log('Could not load available coaches:', error);

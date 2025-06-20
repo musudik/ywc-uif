@@ -47,7 +47,7 @@ export default function CoachDashboard() {
       setLoading(true);
       
       // Load coach's clients
-      const clients = await authService.getCoachClients();
+      const clients = await authService.getCoachClients(user?.id || '');
       
       // Calculate progress for each client
       const clientsWithProgress = await Promise.all(

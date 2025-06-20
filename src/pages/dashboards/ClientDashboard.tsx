@@ -54,7 +54,7 @@ export default function ClientDashboard() {
 
         // Check Family Details
         try {
-          const familyDetails = await formService.getFamilyMembersByUserId(userId);
+          const familyDetails = await formService.getFamilyMemberById(userId);
           console.log('Family details:', familyDetails);
           progressStatus.familyDetails = familyDetails ? true : false;
         } catch (error) {
@@ -79,7 +79,7 @@ export default function ClientDashboard() {
 
         // Check Expenses
         try {
-          const expenses = await formService.getExpensesByUserId(userId);
+          const expenses = await formService.getExpensesById(userId);
           progressStatus.expenses = expenses ? true : false;
         } catch (error) {
           console.log('Expenses details not found');
@@ -150,7 +150,7 @@ export default function ClientDashboard() {
 
             // Check Family Details
             try {
-              const familyDetails = await formService.getFamilyMembersByUserId(userId);
+              const familyDetails = await formService.getFamilyMemberById(userId);
               progressStatus.familyDetails = familyDetails ? true : false;
             } catch (error) {
               console.log('Family details not found');
@@ -173,7 +173,7 @@ export default function ClientDashboard() {
 
             // Check Expenses
             try {
-              const expenses = await formService.getExpensesByUserId(userId);
+              const expenses = await formService.getExpensesById(userId);
               progressStatus.expenses = expenses ? true : false;
             } catch (error) {
               console.log('Expenses details not found');

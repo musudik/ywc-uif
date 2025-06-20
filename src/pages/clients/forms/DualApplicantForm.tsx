@@ -96,7 +96,15 @@ export default function DualApplicantForm() {
           // Load form configuration
           const configResponse = await formSubmissionService.getFormConfiguration(submissionResponse.data.form_config_id);
           if (configResponse.success && configResponse.data) {
-            setFormConfig(configResponse.data);
+                      console.log('🔍 Dual: Full form config response:', configResponse.data);
+          console.log('🔍 Dual: Loaded form config with consent_forms:', configResponse.data.consent_forms);
+          console.log('🔍 Dual: Also checking consent_form (singular):', configResponse.data.consent_form);
+          // Ensure consent_forms is always an array (handle both consent_form and consent_forms)
+          const configWithDefaults = {
+            ...configResponse.data,
+            consent_forms: configResponse.data.consent_forms || configResponse.data.consent_form || []
+          };
+          setFormConfig(configWithDefaults);
           } else {
             console.error('Failed to load form configuration:', configResponse.message);
             showError(t('common.error'), `${t('forms.dynamic.loadError')}: ${configResponse.message || 'Configuration not found'}`);
@@ -111,7 +119,15 @@ export default function DualApplicantForm() {
         // Create new submission
         const configResponse = await formSubmissionService.getFormConfiguration(configId);
         if (configResponse.success && configResponse.data) {
-          setFormConfig(configResponse.data);
+          console.log('🔍 Dual: Full new form config response:', configResponse.data);
+          console.log('🔍 Dual: Loaded new form config with consent_forms:', configResponse.data.consent_forms);
+          console.log('🔍 Dual: Also checking consent_form (singular):', configResponse.data.consent_form);
+          // Ensure consent_forms is always an array (handle both consent_form and consent_forms)
+          const configWithDefaults = {
+            ...configResponse.data,
+            consent_forms: configResponse.data.consent_forms || configResponse.data.consent_form || []
+          };
+          setFormConfig(configWithDefaults);
           
           // Pre-fill with any existing client data for applicant 1
           const prefilledData = await loadClientData(configResponse.data);
@@ -386,6 +402,10 @@ export default function DualApplicantForm() {
       </div>
     );
   }
+
+  // Debug consent forms before rendering
+  console.log('🔍 Dual: About to render - formConfig.consent_forms:', formConfig.consent_forms);
+  console.log('🔍 Dual: Consent forms length:', formConfig.consent_forms?.length);
 
   return (
     <div className="container mx-auto p-6 space-y-6">

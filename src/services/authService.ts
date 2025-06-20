@@ -68,7 +68,7 @@ export class AuthService {
   }
 
   // Get coach's clients (Coach/Admin only)
-  async getCoachClients(): Promise<Array<{
+  async getCoachClients(coachId: string): Promise<Array<{
     user_id: string;
     first_name: string;
     last_name: string;
@@ -76,17 +76,28 @@ export class AuthService {
     applicant_type: string;
     created_at: string;
   }>> {
-    const response = await apiService.get<Array<{
-      user_id: string;
-      first_name: string;
-      last_name: string;
-      email: string;
-      applicant_type: string;
-      created_at: string;
-    }>>('/auth/me/clients');
+    const response = await apiService.get<{
+      coach: {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        role: string;
+      };
+      clients: Array<{
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        applicant_type: string;
+        created_at: string;
+      }>;
+      total_clients: number;
+    }>(`/auth/clients/${coachId}`);
     
     if (response.success && response.data) {
-      return response.data;
+      console.log(response.data);
+      return response.data.clients;
     }
     
     throw new Error(response.message || 'Failed to get clients');

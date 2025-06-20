@@ -495,11 +495,50 @@ function renderIncomeFields(formData: any, onChange: (name: string, value: any) 
   );
 }
 
-// Add placeholder renderers for other form types
+// Update renderFamilyDetailsFields to support multiple members:
 function renderFamilyDetailsFields(formData: any, onChange: (name: string, value: any) => void) {
   const baseClasses = "w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500";
   const { t } = useLanguage();
 
+  // If formData.members is an array, render all members
+  if (Array.isArray(formData.members)) {
+    return (
+      <div className="space-y-6">
+        {formData.members.map((member: any, idx: number) => (
+          <div key={member.family_member_id || idx} className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">{t('forms.familyDetails.firstNameRequired')}</label>
+                <input type="text" value={member.first_name || ''} readOnly className={baseClasses} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">{t('forms.familyDetails.lastNameRequired')}</label>
+                <input type="text" value={member.last_name || ''} readOnly className={baseClasses} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">{t('forms.familyDetails.relationRequired')}</label>
+                <input type="text" value={t(`forms.familyDetails.${member.relation.toLowerCase()}`) || member.relation} readOnly className={baseClasses} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">{t('forms.familyDetails.birthDateRequired')}</label>
+                <input type="text" value={member.birth_date ? member.birth_date.split('T')[0] : ''} readOnly className={baseClasses} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">{t('forms.familyDetails.nationalityRequired')}</label>
+                <input type="text" value={member.nationality || ''} readOnly className={baseClasses} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-white">{t('forms.familyDetails.taxIdOptional')}</label>
+                <input type="text" value={member.tax_id || ''} readOnly className={baseClasses} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Fallback: single member form (legacy)
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-2">
@@ -514,7 +553,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           className={baseClasses}
         />
       </div>
-
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
           {t('forms.familyDetails.lastNameRequired')}
@@ -527,7 +565,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           className={baseClasses}
         />
       </div>
-
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
           {t('forms.familyDetails.relationRequired')}
@@ -545,7 +582,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           <option value="Other">{t('forms.dynamic.other')}</option>
         </select>
       </div>
-
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
           {t('forms.familyDetails.birthDateRequired')}
@@ -558,7 +594,6 @@ function renderFamilyDetailsFields(formData: any, onChange: (name: string, value
           className={baseClasses}
         />
       </div>
-
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-900 dark:text-white">
           {t('forms.familyDetails.nationalityRequired')}
@@ -979,7 +1014,15 @@ export default function DynamicForm() {
           // Load form configuration
           const configResponse = await formSubmissionService.getFormConfiguration(submissionResponse.data.form_config_id);
           if (configResponse.success && configResponse.data) {
-            setFormConfig(configResponse.data);
+                      console.log('🔍 Full form config response:', configResponse.data);
+          console.log('🔍 Loaded form config with consent_forms:', configResponse.data.consent_forms);
+          console.log('🔍 Also checking consent_form (singular):', configResponse.data.consent_form);
+          // Ensure consent_forms is always an array (handle both consent_form and consent_forms)
+          const configWithDefaults = {
+            ...configResponse.data,
+            consent_forms: configResponse.data.consent_forms || configResponse.data.consent_form || []
+          };
+          setFormConfig(configWithDefaults);
           } else {
             console.error('Failed to load form configuration:', configResponse.message);
             showError(t('common.error'), `${t('forms.dynamic.loadError')}: ${configResponse.message || 'Configuration not found'}`);
@@ -994,7 +1037,15 @@ export default function DynamicForm() {
         // Create new submission
         const configResponse = await formSubmissionService.getFormConfiguration(configId);
         if (configResponse.success && configResponse.data) {
-          setFormConfig(configResponse.data);
+          console.log('🔍 Full new form config response:', configResponse.data);
+          console.log('🔍 Loaded new form config with consent_forms:', configResponse.data.consent_forms);
+          console.log('🔍 Also checking consent_form (singular):', configResponse.data.consent_form);
+          // Ensure consent_forms is always an array (handle both consent_form and consent_forms)
+          const configWithDefaults = {
+            ...configResponse.data,
+            consent_forms: configResponse.data.consent_forms || configResponse.data.consent_form || []
+          };
+          setFormConfig(configWithDefaults);
           
           // Pre-fill form with existing client data
           const prefilledData = await loadClientData(configResponse.data);
@@ -1206,14 +1257,7 @@ export default function DynamicForm() {
           } else if (sectionTitle.includes('family')) {
             const familyMembers = await formService.getFamilyMembersByUserId(userIdToLoad);
             if (familyMembers && familyMembers.length > 0) {
-              const familyMember = familyMembers[0]; // Use the first family member
-              sectionData = {
-                first_name: familyMember.first_name || '',
-                last_name: familyMember.last_name || '',
-                relation: familyMember.relation || '',
-                birth_date: formatDateForInput(familyMember.birth_date),
-                nationality: familyMember.nationality || '',
-              };
+              sectionData = { members: familyMembers };
             }
           }
         } catch (error) {
@@ -1410,6 +1454,10 @@ export default function DynamicForm() {
       </div>
     );
   }
+
+  // Debug consent forms before rendering
+  console.log('🔍 About to render - formConfig.consent_forms:', formConfig.consent_forms);
+  console.log('🔍 Consent forms length:', formConfig.consent_forms?.length);
 
   return (
     <div className="container mx-auto p-6 space-y-6">

@@ -60,7 +60,7 @@ export default function ClientManagement() {
         setTotalClients(clientData.length);
       } else {
         // For coaches, get their assigned clients
-        const coachClients = await authService.getCoachClients();
+        const coachClients = await authService.getCoachClients(user?.id || '');
         // Transform the data to match our interface
         const clientData = coachClients.map((client: any) => ({
           id: client.personal_id || client.user_id || client.id,
