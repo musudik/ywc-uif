@@ -97,7 +97,7 @@ export class FormService {
   }
 
   async getEmploymentById(employmentId: string): Promise<EmploymentDetails> {
-    const response = await apiService.get<EmploymentDetails>(`/employment/${employmentId}`);
+    const response = await apiService.get<EmploymentDetails>(`/employment/user/${employmentId}`);
     if (response.success && response.data) {
       return response.data;
     }
@@ -199,7 +199,7 @@ export class FormService {
   }
 
   async getExpensesByUserId(userId: string): Promise<ExpensesDetails[]> { 
-    const response = await apiService.get<ExpensesDetails[]>(`/expenses/${userId}`);
+    const response = await apiService.get<ExpensesDetails[]>(`/expenses/user/${userId}`);
     if (response.success && response.data) {
       return response.data;
     }
@@ -360,7 +360,7 @@ export class FormService {
   }
 
   async getFamilyMemberById(familyMemberId: string): Promise<FamilyMember> {
-    const response = await apiService.get<FamilyMember>(`/family-members/${familyMemberId}`);
+    const response = await apiService.get<FamilyMember>(`/family-members/user/${familyMemberId}`);
     console.log('Family member:', response);
     if (response.success && response.data) {
       return response.data;

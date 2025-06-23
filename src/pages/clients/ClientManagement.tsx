@@ -18,12 +18,14 @@ interface ClientData {
   personal_id?: string;
   user_id?: string;
   applicant_type?: string;
+  coach_name?: string;
 }
 
 export default function ClientManagement() {
   const { user } = useAuth();
   const { showError, showSuccess } = useNotification();
   const [clients, setClients] = useState<ClientData[]>([]);
+  const [coaches, setCoaches] = useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,9 +41,19 @@ export default function ClientManagement() {
     try {
       setLoading(true);
       if (user?.role === 'ADMIN') {
-        // For admins, get all users with CLIENT role
-        const clientUsers = await authService.getAllClients();
-        //const clientUsers = allUsers.filter((u: any) => u.role === 'CLIENT');
+        // For admins, get all users with CLIENT role and load coaches
+        const [clientUsers, coachUsers] = await Promise.all([
+          authService.getAllClients(),
+          authService.getAllCoaches()
+        ]);
+        
+        setCoaches(coachUsers);
+        
+        // Create a map of coach_id to coach_name for quick lookup
+        const coachMap = coachUsers.reduce((map, coach) => {
+          map[coach.id] = `${coach.first_name} ${coach.last_name}`;
+          return map;
+        }, {} as Record<string, string>);
         
         // Transform the data to match our interface
         const clientData = clientUsers.map((client: any) => ({
@@ -54,6 +66,7 @@ export default function ClientManagement() {
           coach_id: client.coach_id,
           user_id: client.id || client.user_id,
           applicant_type: client.applicant_type,
+          coach_name: client.coach_id ? coachMap[client.coach_id] || 'Unknown Coach' : 'No Coach Assigned',
         }));
         
         setClients(clientData);
@@ -72,6 +85,7 @@ export default function ClientManagement() {
           applicant_type: client.applicant_type,
           personal_id: client.personal_id,
           user_id: client.user_id || client.id,
+          coach_name: user ? `${user.first_name} ${user.last_name}` : 'You',
         }));
         setClients(clientData);
         setTotalClients(clientData.length);
@@ -141,7 +155,8 @@ export default function ClientManagement() {
   const filteredClients = clients.filter(client =>
     client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase())
+    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (client.coach_name && client.coach_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Pagination
@@ -196,7 +211,10 @@ export default function ClientManagement() {
               name="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search clients by name or email..."
+              placeholder={user?.role === 'ADMIN' 
+                ? "Search clients by name, email, or coach..." 
+                : "Search clients by name or email..."
+              }
             />
           </div>
           <div className="flex items-center space-x-6 text-sm">
@@ -272,14 +290,16 @@ export default function ClientManagement() {
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Joined
                   </th>
+                  {user?.role === 'ADMIN' && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Coach
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
@@ -307,11 +327,6 @@ export default function ClientManagement() {
                       {client.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
-                        {client.applicant_type || 'PrimaryApplicant'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         client.is_active 
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -323,6 +338,11 @@ export default function ClientManagement() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {formatDate(client.created_at)}
                     </td>
+                    {user?.role === 'ADMIN' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {client.coach_name}
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-1">
                         <Link
