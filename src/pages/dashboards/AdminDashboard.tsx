@@ -55,13 +55,13 @@ export default function AdminDashboard() {
           
           // Check each form section
           const formChecks = [
-            { service: () => formService.getPersonalDetailsById(userId), name: t('dashboard.client.personalInfo') },
-            { service: () => formService.getFamilyMembersByUserId(userId), name: t('dashboard.client.familyInfo') },
-            { service: () => formService.getEmploymentById(userId), name: t('dashboard.client.employmentDetails') },
-            { service: () => formService.getIncomeById(userId), name: t('dashboard.client.incomeDetails') },
-            { service: () => formService.getExpensesByUserId(userId), name: t('dashboard.client.monthlyExpenses') },
-            { service: () => formService.getAssetById(userId), name: t('dashboard.client.assetsInvestments') },
-            { service: () => formService.getLiabilityById(userId), name: t('dashboard.client.debtsLiabilities') }
+            { service: () => formService.getPersonalDetailsById(userId), name: 'Personal Info' },
+            { service: () => formService.getFamilyMembersByUserId(userId), name: 'Family Details' },
+            { service: () => formService.getEmploymentByUserId(userId), name: 'Employment Details' },
+            { service: () => formService.getIncomeByUserId(userId), name: 'Income Details' },
+            { service: () => formService.getExpensesByUserId(userId), name: 'Monthly Expenses' },
+            { service: () => formService.getAssetsByUserId(userId), name: 'Assets & Investments' },
+            { service: () => formService.getLiabilitiesByUserId(userId), name: 'Debts & Liabilities' }
           ];
 
           for (const formCheck of formChecks) {
