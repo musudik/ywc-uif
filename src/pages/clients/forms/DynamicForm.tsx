@@ -1202,9 +1202,10 @@ export default function DynamicForm() {
           } else if (sectionTitle.includes('assets')) {
             try {
               // Use the correct method for getting assets by user ID
-              const asset = await formService.getAssetsByUserId(userIdToLoad);
-              if (asset) {
+              const assets = await formService.getAssetsByUserId(userIdToLoad);
+              if (assets && assets.length > 0) {
                 // Use the first asset record and map to the form fields
+                const asset = assets[0];
                 sectionData = {
                   real_estate: asset.real_estate || 0,
                   securities: asset.securities || 0,
@@ -1622,4 +1623,4 @@ export default function DynamicForm() {
       </div>
     </div>
   );
-} 
+}
