@@ -130,7 +130,7 @@ export class FormService {
 
   async getEmploymentById(employmentId: string): Promise<EmploymentDetails> {
     const response = await apiService.get<EmploymentDetails>(
-      `/employment/user/${employmentId}`,
+      `/employment/${employmentId}`,
     );
     if (response.success && response.data) {
       return response.data;
@@ -140,7 +140,7 @@ export class FormService {
 
   async getEmploymentByUserId(userId: string): Promise<EmploymentDetails> {
     const response = await apiService.get<EmploymentDetails>(
-      `/employment/${userId}`,
+      `/employment/user/${userId}`,
     );
     if (response.success && response.data) {
       return response.data;
@@ -202,7 +202,7 @@ export class FormService {
   }
 
   async getIncomeByUserId(userId: string): Promise<IncomeDetails[]> {
-    const response = await apiService.get<IncomeDetails[]>(`/income/${userId}`);
+    const response = await apiService.get<IncomeDetails[]>(`/income/user/${userId}`);
     if (response.success && response.data) {
       return response.data;
     }
@@ -313,8 +313,8 @@ export class FormService {
     throw new Error(response.message || "Failed to get asset");
   }
 
-  async getAssetsByUserId(userId: string): Promise<Asset> {
-    const response = await apiService.get<Asset>(`/assets/${userId}`);
+  async getAssetsByUserId(userId: string): Promise<Asset[]> {
+    const response = await apiService.get<Asset[]>(`/assets/user/${userId}`);
     if (response.success && response.data) {
       return response.data;
     }
@@ -370,7 +370,7 @@ export class FormService {
 
   async getLiabilitiesByUserId(userId: string): Promise<Liability[]> {
     const response = await apiService.get<Liability[]>(
-      `/liabilities/${userId}`,
+      `/liabilities/user/${userId}`,
     );
     if (response.success && response.data) {
       return response.data;

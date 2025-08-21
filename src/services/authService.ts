@@ -103,18 +103,14 @@ export class AuthService {
     throw new Error(response.message || 'Failed to get clients');
   }
 
-  // Get all coaches (Admin only) - for now we'll simulate this by getting all users with role COACH
-  // This is a temporary solution until a proper /coaches endpoint is available
+  // Get all coaches (Admin only)
   async getAllCoaches(): Promise<Array<{
     id: string;
     first_name: string;
     last_name: string;
     email: string;
   }>> {
-    // For now, we'll return mock data since there's no dedicated coaches endpoint
-    // In a real implementation, this would call a /users?role=COACH endpoint
     try {
-      // Try to get users with COACH role - this endpoint may not exist yet
       const response = await apiService.get<Array<{
         id: string;
         first_name: string;
@@ -127,27 +123,21 @@ export class AuthService {
         return response.data;
       }
     } catch (error) {
-      console.log('No dedicated coaches endpoint available, using fallback');
+      console.log('Error fetching coaches:', error);
     }
     
-    // Fallback: Return mock coaches for now
-    return [    
-    ];
+    // Return empty array if endpoint fails
+    return [];
   }
 
-
-  // Get all clients (Admin only) - for now we'll simulate this by getting all users with role CLIENT
-  // This is a temporary solution until a proper /clients endpoint is available
+  // Get all clients (Admin only)
   async getAllClients(): Promise<Array<{
     id: string;
     first_name: string;
     last_name: string;
     email: string;
   }>> {
-    // For now, we'll return mock data since there's no dedicated clients endpoint
-    // In a real implementation, this would call a /users?role=CLIENT endpoint
     try {
-      // Try to get users with CLIENT role - this endpoint may not exist yet
       const response = await apiService.get<Array<{
         id: string;
         first_name: string;
@@ -160,12 +150,11 @@ export class AuthService {
         return response.data;
       }
     } catch (error) {
-      console.log('No dedicated clients endpoint available, using fallback');
+      console.log('Error fetching clients:', error);
     }
     
-    // Fallback: Return mock clients for now
-    return [    
-    ];
+    // Return empty array if endpoint fails
+    return [];
   }
 
   // Refresh JWT token
