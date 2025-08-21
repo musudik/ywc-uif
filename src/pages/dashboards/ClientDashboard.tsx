@@ -79,7 +79,7 @@ export default function ClientDashboard() {
 
         // Check Expenses
         try {
-          const expenses = await formService.getExpensesById(userId);
+          const expenses = await formService.getExpensesByUserId(userId);
           progressStatus.expenses = expenses ? true : false;
         } catch (error) {
           console.log('Expenses details not found');

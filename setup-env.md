@@ -5,6 +5,9 @@
 Create a `.env` file in your project root directory with the following content:
 
 ```env
+# API Configuration
+VITE_API_BASE_URL=http://localhost:3000
+
 # Firebase Configuration
 VITE_FIREBASE_API_KEY=AIzaSyDlYMYl0llL-mSF7yDo21sQP2tF4X9xol4
 VITE_FIREBASE_AUTH_DOMAIN=ywc-storage.firebaseapp.com

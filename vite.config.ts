@@ -15,6 +15,6 @@ export default defineConfig({
     host: "0.0.0.0",
     port: PORT,
     strictPort: true,
-    allowedHosts: ["your-wealth-coach.replit.app"],
+    allowedHosts: ["your-wealth-coach.replit.app", "ywc-api.replit.app"],
   },
 });
